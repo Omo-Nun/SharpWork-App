@@ -1,0 +1,143 @@
+### SharpWork Global PRD Rules.txt
+
+This document outlines the strict global constraints, technology stack requirements, and business logic rules for SharpWork (formerly ArtisanNG). All agents must adhere strictly to these guidelines when generating architecture, components, and backend logic.
+
+#### Core Technology Stack
+
+All generated code must utilize the following specified stack. Do not substitute these with alternative frameworks.
+
+| Layer | Web Technology | Mobile Technology | Primary Purpose |
+| --- | --- | --- | --- |
+| **Frontend** | React.js 18+, TypeScript, Next.js
+
+ | React Native, TypeScript, Expo | Web: Server-side rendering (SSR), SEO optimization, component reuse. Mobile: Cross-platform native compilation.
+
+ |
+| **Styling** | TailwindCSS
+
+ | TailwindCSS | Mobile-first rapid UI development and consistent spacing.
+
+ |
+| **State** | Zustand, React Query
+
+ | Zustand, React Query | Server state caching and lightweight state management.
+
+ |
+| **Backend** | Node.js, Express.js
+
+ | Node.js, Express.js | Non-blocking I/O for real-time booking systems.
+
+ |
+| **Database** | PostgreSQL 15, Prisma ORM
+
+ | PostgreSQL 15, Prisma ORM | ACID compliance for payments and JSON support.
+
+ |
+| **Caching** | Redis 7
+
+ | Redis 7 | Session storage, availability toggling, and job queues.
+
+ |
+| **Local Storage** | Browser `localStorage`<br> | Expo SecureStore / MMKV | Fast, encrypted data caching replacing browser storage on mobile. |
+| **Mapping** | Google Maps JS API
+
+ | `react-native-maps` | Web: Street accuracy and distance matrix. Mobile: Native map SDK integration.
+
+ |
+
+#### Third-Party Integrations
+
+* **Payment & Escrow:** Implement Paystack as the primary gateway for native escrow and split payments. Use the Paystack Mobile SDK directly inside the app, as SharpWork is legally exempt from Apple's 30% In-App Purchase tax due to facilitating physical services.
+
+
+* **KYC & Verification:** Utilize the Smile Identity API for NIN/BVN checks, facial matching, and liveness detection. Transition to the Smile Identity Native Mobile SDK for reliable camera control, edge detection, and liveness checks on mobile devices.
+
+
+* **Communications:** Use Termii exclusively for SMS/OTP delivery and SendGrid for transactional emails. Augment alerts with native push notifications via Firebase Cloud Messaging (FCM) for Android and Apple Push Notification service (APNs) for iOS, utilizing SMS only as a fallback for high-priority alerts.
+
+
+* **Mapping:** Integrate the Google Maps JS API for street accuracy, distance matrix, and autocomplete functionalities.
+
+
+* **Storage:** Use AWS S3 paired with CloudFront for all artisan photos and ID uploads.
+
+
+
+#### Database & Security Constraints
+
+* **Primary Keys:** Generate UUIDs for all database primary keys to prevent enumeration attacks.
+
+
+* **Deletion Protocol:** Enforce soft deletes exclusively using a `deleted_at` timestamp; records must never be hard-deleted.
+
+
+* **Data Isolation:** Implement Row-Level Security (RLS) in PostgreSQL to ensure artisans cannot view other artisans' financial or booking data.
+
+
+* **Spatial Queries:** Install and utilize the PostGIS extension (`ST_DWithin`) for artisan radius searches instead of executing external API calls for distance filtering.
+
+
+* **Query Safety:** Ensure all database inputs are sanitized and parameterized; raw, unparameterized SQL is strictly prohibited.
+
+
+* **Mobile Networking:** Enforce SSL pinning in the mobile networking layer (Axios/Fetch) to prevent Man-in-the-Middle (MitM) attacks on public networks.
+
+#### Authentication & Access Control
+
+* **Token Strategy:** Implement JWT authentication. For the web application, enforce a 24-hour access token and 30-day refresh token rotation using `httpOnly` refresh tokens stored as cookies. For native apps, secure the tokens using iOS Keychain and Android Keystore via Expo SecureStore.
+
+
+* **Biometric Login:** Provide optional biometric authentication (FaceID, TouchID, Android Fingerprint) mapped directly to the local secure token release for mobile users.
+* **Role Segregation:** Restrict all API routes and UI components based on three explicit roles: Customer, Artisan, and Admin.
+
+
+* **Admin Security:** Enforce Time-Based One-Time Password (TOTP) via Google Authenticator as mandatory for all admin dashboard access.
+
+
+* **Password Resets:** Process password resets exclusively via SMS OTP (using Termii), valid for 10 minutes and strictly single-use.
+
+
+
+#### Core Business Logic
+
+* **Job State Machine:** Enforce strict server-side state transitions for bookings: Pending > Accepted > In Progress > Completed > Reviewed.
+
+
+* **Escrow Holds:** Ensure payment is held in a Paystack sub-account and released to the artisan only upon post-job confirmation by the customer.
+
+
+* **Booking Integrity:** Preserve the 5-step booking wizard state using `localStorage` to prevent data loss on browser refresh.
+
+
+* **Artisan Verification:** Require a 4-step artisan verification flow (NIN check, Skill test, Background check, References) before assigning a verification badge.
+
+
+* **Verification Thresholds:** Set the Smile Identity API matching confidence threshold to > 80% for auto-approval.
+
+
+* **Background Geolocation:** Request background location permissions when an artisan's state transitions to *In Progress* to feed coordinate streams to the customer’s live tracking map.
+* **Account Deletion Mandate:** Build a native "Delete Account" button in the profile settings to trigger the `deleted_at` soft-delete protocol, strictly complying with Apple and Google app store requirements.
+* **Moderation:** Include a native "Report/Block User" button on artisan profiles to handle abusive behavior before it hits admin mediation, ensuring compliance with UGC policies.
+
+#### UI/UX & Brand Guidelines
+
+* **Brand Colors:** Take from logo.
+
+
+* **Typography:** Apply Poppins Bold for all headings and Poppins Regular for body text. Bundle the Poppins font locally (`.ttf` or `.otf`) within the mobile app wrapper to prevent rendering lag during cold starts.
+
+
+* **Performance Target:** Optimize the primary landing page to load in under 3 seconds on a 3G connection.
+
+
+* **Offline Gracefulness:** Implement offline state handling using React Query’s cached storage, allowing artisans to view current *Accepted* or *In Progress* job details during mobile internet connectivity drops.
+
+#### Testing & Quality Assurance
+
+* **Code Coverage:** Write Jest unit tests targeting a minimum of 80% coverage across all new business logic modules.
+
+
+* **Lighthouse Standards:** Audit frontend code to maintain minimum Lighthouse scores: Performance > 85, Accessibility > 90, SEO > 95, and Best Practices > 90.
+
+
+* **Error Handling:** Log all system errors to Sentry with full context; users must receive friendly error messages, never raw system codes.

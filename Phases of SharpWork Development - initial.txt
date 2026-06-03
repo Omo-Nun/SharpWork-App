@@ -1,0 +1,131 @@
+### Phase 1: Workspace Initialization and Knowledge Context
+
+* 
+**Workspace Setup:** Launch the Antigravity Desktop App and create a new workspace named SharpWork.
+
+
+* 
+**Knowledge Integration:** Upload the complete PRD directly into the Antigravity Knowledge Base or create a dedicated `.agents/rules/sharpwork-prd-rules.md` file. This serves as the permanent context window for all subagents. Establish global workspace rules ensuring all code generated strictly adheres to React.js 18+ (Next.js for SSR), Node.js (Express), and PostgreSQL 15 standards.
+
+
+* 
+**Agent Task Allocation:** Spawn an architect subagent to read the PRD and generate an implementation Artifact (a detailed folder structure and sequence diagram for the stack). Spawn a parallel DevOps subagent to initialize the Git repository, configure the `.gitignore`, and set up the `package.json` for both the frontend and backend environments.
+
+
+
+---
+
+### Phase 2: Database and Infrastructure Scaffolding
+
+* 
+**Database Setup:** Instruct the terminal agent to execute a local PostgreSQL 15 Docker container. Prompt the agent to install and configure the PostGIS extension required for the location-based radius search capability.
+
+
+* 
+**Schema Generation:** Command the coding agent to define the Prisma schema mapping the exact ERD from the PRD. Apply a strict Antigravity constraint rule to ensure all primary keys use UUIDs to prevent enumeration attacks, and enforce row-level security (RLS) policies as specified. Instruct the agent to generate and run the initial database migrations.
+
+
+* 
+**Redis Initialization:** Direct a background agent to spin up a Redis 7 instance to handle session caching, availability toggling, and job queues.
+
+
+
+---
+
+### Phase 3: Authentication and Security Layer
+
+* 
+**Secrets Management:** Load all placeholder development keys for Paystack, Termii, Smile Identity, and SendGrid directly into the Antigravity Secrets Manager.
+
+
+* 
+**User Management Implementation:** Prompt the main agent to scaffold the Express.js authentication routes (`/auth/register`, `/auth/login`, `/auth/refresh`). Instruct the agent to implement JWT authentication utilizing `httpOnly` refresh cookies to secure the 30-day token rotation cycle.
+
+
+* 
+**Role-Based Access Control (RBAC):** Direct the agent to write middleware that strictly separates Customer, Artisan, and Admin roles, applying these to both backend API endpoints and Next.js frontend route guards.
+
+
+* 
+**Termii Integration:** Trigger a subagent to write the utility function for the Termii SMS API, handling the 60-second OTP generation, delivery, and verification logic.
+
+
+
+---
+
+### Phase 4: Core Microservices and Third-Party Integrations
+
+* 
+**Smile Identity Verification Flow:** Instruct a dedicated agent to build the 4-step artisan verification module. Prompt it to integrate the Smile Identity API to handle NIN/BVN checks and facial liveness, explicitly requiring the > 80% confidence logic to be enforced server-side.
+
+
+* 
+**Escrow and Payment Engine:** Prompt the coding agent to build the 5-state booking machine (Pending -> Accepted -> In Progress -> Completed -> Reviewed). Direct the agent to integrate Paystack's split payment system, ensuring funds are routed correctly to the escrow sub-account. Create an Antigravity Workflow to repeatedly test and validate the Paystack webhook signature verification logic to prevent spoofed payment confirmations.
+
+
+* 
+**Search and Discovery Engine:** Prompt the agent to implement the full-text search API endpoint utilizing PostgreSQL. Instruct the agent to leverage PostGIS functions (`ST_DWithin`) to compute the 5/10/20/50km radius logic using the artisan's latitude and longitude data.
+
+
+
+---
+
+### Phase 5: Frontend Development and Booking UI
+
+* 
+**UI Scaffolding:** Instruct the frontend agent to initialize Next.js, TailwindCSS, and Zustand for state management. Prompt the agent to build the design system components (buttons, cards, inputs) using the SharpWork brand colors (Navy #0D2B5E, Orange #F56500, Green #007A52).
+
+
+* 
+**Booking Wizard:** Direct the agent to build the 5-step booking wizard interface. Add a strict rule for this task to ensure all booking state is preserved in localStorage so users do not lose data if the browser refreshes.
+
+
+* 
+**Dashboards:** Spawn parallel subagents to simultaneously build the Customer Dashboard (KPIs, recent bookings) and the Artisan Dashboard (online toggle, incoming requests, earnings chart) based on the wireframes.
+
+
+
+---
+
+### Phase 6: Real-Time Systems and Admin Portal
+
+* 
+**WebSocket Integration:** Instruct the backend agent to configure Socket.io. Direct the frontend agent to connect to the socket namespace to handle real-time incoming job requests and in-app chat within the isolated booking context.
+
+
+* 
+**Admin Dashboard:** Prompt the agent to create a separate Next.js application (or isolated routing layer) for `admin.sharpwork.com`. Enforce the implementation of Time-Based One-Time Password (TOTP) Google Authenticator 2FA for all admin login instances. Instruct the agent to build the Dispute Centre, allowing admin mediation, escrow freezing, and Paystack refund processing via the UI.
+
+
+
+---
+
+### Phase 7: Testing, Auditing, and Verification
+
+* 
+**Automated Testing Workflow:** Trigger the saved Antigravity Workflow `generate-unit-tests`. Instruct the agent to target 80% code coverage across all business logic using Jest. Spawn a testing subagent to generate Postman/Jest integration tests covering every endpoint documented in the API reference.
+
+
+* 
+**Chrome DevTools Integration:** Enable the Chrome DevTools plugin in Antigravity. Direct the agent to autonomously run Lighthouse audits on the frontend to ensure Performance > 85, Accessibility > 90, and SEO > 95, fixing any detected bottlenecks immediately.
+
+
+* 
+**Security Audit:** Prompt an agent to review all raw SQL queries to ensure parameterization and verify that all user inputs are being sanitized prior to database entry.
+
+
+
+---
+
+### Phase 8: Deployment and CI/CD
+
+* 
+**Infrastructure as Code (IaC):** Direct the agent to generate efficient Dockerfiles for the frontend, backend, and admin portal.
+
+
+* 
+**GitHub Actions Workflow:** Prompt the DevOps agent to write the `.github/workflows/deploy.yml` pipeline. Ensure the pipeline includes sequential steps: Linting -> Jest Unit Tests -> Docker Build -> Push to AWS Cape Town (af-south-1) instances.
+
+
+* 
+**Final Launch Sequence:** Instruct the agent to generate an Artifact checklist verifying that production Sentry monitoring, CloudWatch logging, and all API webhooks are fully active and reachable before the final production cutover.

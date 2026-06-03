@@ -1,0 +1,7 @@
+Things to remember for Latuns App.
+
+To build a static image in docker:
+docker compose up --build -d
+
+To cleanup existing images:
+docker image prune -f

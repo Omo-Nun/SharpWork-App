@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-green: #007A52;
+  --color-brand-navy: #0D2B5E;
+  --color-brand-orange: #F56500;
+  --color-brand-white: #FFFFFF;
+  --color-brand-black: #000000;
+  --font-sans: var(--font-poppins), sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-brand-black font-sans;
+  }
+}

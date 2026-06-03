@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
+}
+
+enum Role {
+  CUSTOMER
+  ARTISAN
+  ADMIN
+}
+
+enum BookingState {
+  PENDING
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  REVIEWED
+}
+
+model User {
+  id            String    @id @default(uuid()) @db.Uuid
+  email         String    @unique
+  passwordHash  String
+  phoneNumber   String    @unique
+  role          Role
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deleted_at    DateTime?
+
+  customerProfile CustomerProfile?
+  artisanProfile  ArtisanProfile?
+  adminProfile    AdminProfile?
+
+  bookingsAsCustomer Booking[] @relation("CustomerBookings")
+  bookingsAsArtisan  Booking[] @relation("ArtisanBookings")
+  messagesSent       Message[] @relation("SenderMessages")
+  messagesReceived   Message[] @relation("ReceiverMessages")
+  disputesRaised     Dispute[] @relation("DisputesRaised")
+}
+
+model CustomerProfile {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @unique @db.Uuid
+  user       User      @relation(fields: [userId], references: [id])
+  firstName  String
+  lastName   String
+  deleted_at DateTime?
+}
+
+model ArtisanProfile {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @unique @db.Uuid
+  user              User      @relation(fields: [userId], references: [id])
+  firstName         String
+  lastName          String
+  nin               String?   @unique
+  bvn               String?   @unique
+  isVerified        Boolean   @default(false)
+  verificationScore Float?
+  skills            String[]
+  // Location coordinates for PostGIS (lat/lng stored as Float, but we use raw queries for ST_DWithin)
+  latitude          Float?
+  longitude         Float?
+  isOnline          Boolean   @default(false)
+  deleted_at        DateTime?
+}
+
+model AdminProfile {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @unique @db.Uuid
+  user       User      @relation(fields: [userId], references: [id])
+  totpSecret String?
+  deleted_at DateTime?
+}
+
+model Booking {
+  id              String       @id @default(uuid()) @db.Uuid
+  customerId      String       @db.Uuid
+  artisanId       String       @db.Uuid
+  customer        User         @relation("CustomerBookings", fields: [customerId], references: [id])
+  artisan         User         @relation("ArtisanBookings", fields: [artisanId], references: [id])
+  state           BookingState @default(PENDING)
+  description     String
+  price           Float
+  paystackRef     String?      @unique
+  escrowReleased  Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  deleted_at      DateTime?
+  disputes        Dispute[]
+}
+
+model Message {
+  id         String    @id @default(uuid()) @db.Uuid
+  senderId   String    @db.Uuid
+  receiverId String    @db.Uuid
+  sender     User      @relation("SenderMessages", fields: [senderId], references: [id])
+  receiver   User      @relation("ReceiverMessages", fields: [receiverId], references: [id])
+  content    String
+  createdAt  DateTime  @default(now())
+  deleted_at DateTime?
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  ESCALATED
+}
+
+model Dispute {
+  id            String        @id @default(uuid()) @db.Uuid
+  bookingId     String        @db.Uuid
+  booking       Booking       @relation(fields: [bookingId], references: [id])
+  raisedById    String        @db.Uuid
+  raisedBy      User          @relation("DisputesRaised", fields: [raisedById], references: [id])
+  reason        String
+  adminNotes    String?
+  status        DisputeStatus @default(OPEN)
+  escrowFrozen  Boolean       @default(true)
+  resolvedAt    DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deleted_at    DateTime?
+}
+
