@@ -1,2 +1,7 @@
 [variables]
 NIXPACKS_NODE_VERSION = "20"
+# Install devDependencies so TypeScript, @types/*, and turbo are available during build.
+NPM_CONFIG_PRODUCTION = "false"
+
+[phases.setup]
+nixPkgs = ["nodejs_20", "python3", "gcc"]

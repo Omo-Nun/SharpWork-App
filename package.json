@@ -11,7 +11,13 @@
     "test:integration": "npm run test:integration --workspace=api",
     "lighthouse": "npm run lighthouse --workspace=web",
     "deploy:checklist": "bash scripts/production-checklist.sh",
-    "deploy:prod": "docker compose -f docker-compose.prod.yml up -d --build"
+    "deploy:prod": "docker compose -f docker-compose.prod.yml up -d --build",
+    "build:api": "npm run build --workspace=api",
+    "build:web": "npm run build --workspace=web",
+    "build:admin": "npm run build --workspace=admin",
+    "start:api": "npm run start:prod --workspace=api",
+    "start:web": "npm run start --workspace=web",
+    "start:admin": "npm run start --workspace=admin"
   },
   "devDependencies": {
     "prettier": "^3.7.4",
