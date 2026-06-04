@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "SharpWork Express Backend",
   "engines": {
-    "node": ">=20.9.0"
+    "node": "20.18.0"
   },
   "main": "src/index.ts",
   "scripts": {
