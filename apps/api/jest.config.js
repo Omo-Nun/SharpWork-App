@@ -1,5 +1,3 @@
-const path = require('path');
-
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
@@ -25,10 +23,5 @@ module.exports = {
     './src/utils/jwt.ts': { branches: 50, functions: 100, lines: 100, statements: 100 },
     './src/utils/cookies.ts': { branches: 100, functions: 100, lines: 100, statements: 100 },
   },
-  moduleNameMapper: {
-    '^otplib$': path.join(__dirname, '../../node_modules/otplib/dist/index.cjs'),
-  },
-  transformIgnorePatterns: [
-    'node_modules/(?!(@scure|@noble|@otplib|otplib)/)',
-  ],
+  transformIgnorePatterns: ['node_modules/'],
 };

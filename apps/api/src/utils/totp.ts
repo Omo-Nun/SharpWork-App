@@ -1,21 +1,16 @@
-import { generateSecret, generateURI, verifySync } from 'otplib';
+import { authenticator } from 'otplib';
 import QRCode from 'qrcode';
 
 export function generateTotpSecret(): string {
-  return generateSecret();
+  return authenticator.generateSecret();
 }
 
 export function buildTotpUri(email: string, secret: string): string {
-  return generateURI({
-    issuer: 'SharpWork Admin',
-    label: email,
-    secret,
-  });
+  return authenticator.keyuri(email, 'SharpWork Admin', secret);
 }
 
 export function verifyTotpToken(token: string, secret: string): boolean {
-  const result = verifySync({ secret, token });
-  return result.valid;
+  return authenticator.verify({ token, secret });
 }
 
 export async function generateTotpQrCode(otpAuthUrl: string): Promise<string> {
