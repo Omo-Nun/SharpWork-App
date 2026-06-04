@@ -2,6 +2,9 @@
   "name": "api",
   "version": "1.0.0",
   "description": "SharpWork Express Backend",
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "main": "src/index.ts",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
