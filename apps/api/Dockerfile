@@ -28,4 +28,5 @@ COPY --from=installer /app .
 
 WORKDIR /app/apps/api
 EXPOSE 4000
-CMD ["npm", "run", "start"]
+RUN chmod +x docker-entrypoint.sh
+ENTRYPOINT ["./docker-entrypoint.sh"]

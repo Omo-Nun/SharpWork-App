@@ -1,0 +1,125 @@
+{
+  "info": {
+    "name": "SharpWork API",
+    "description": "Integration reference for SharpWork Express API endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4000" },
+    { "key": "accessToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+    },
+    {
+      "name": "Auth — Register",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"customer@example.com\",\n  \"password\": \"password123\",\n  \"phoneNumber\": \"+2348012345678\",\n  \"role\": \"CUSTOMER\",\n  \"firstName\": \"Ada\",\n  \"lastName\": \"Lovelace\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/register"
+      }
+    },
+    {
+      "name": "Auth — Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"customer@example.com\",\n  \"password\": \"password123\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      }
+    },
+    {
+      "name": "Search — Artisans Near Me",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/search?lat=6.5244&lng=3.3792&radiusKm=10"
+      }
+    },
+    {
+      "name": "Booking — Create",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"artisanId\": \"ARTISAN_UUID\",\n  \"description\": \"Fix leaking kitchen faucet and replace washers\",\n  \"price\": 15000,\n  \"serviceAddress\": \"12 Allen Avenue, Ikeja\"\n}"
+        },
+        "url": "{{baseUrl}}/booking"
+      }
+    },
+    {
+      "name": "Booking — Verify Payment",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"reference\": \"PAYSTACK_REF\"\n}" },
+        "url": "{{baseUrl}}/booking/payment/verify"
+      }
+    },
+    {
+      "name": "Booking — Update State",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"state\": \"ACCEPTED\"\n}" },
+        "url": "{{baseUrl}}/booking/BOOKING_UUID/state"
+      }
+    },
+    {
+      "name": "Moderation — Report User",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"targetUserId\": \"USER_UUID\",\n  \"reason\": \"Inappropriate behaviour\"\n}"
+        },
+        "url": "{{baseUrl}}/moderation/report"
+      }
+    },
+    {
+      "name": "Admin — Stats",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": "{{baseUrl}}/admin/stats"
+      }
+    },
+    {
+      "name": "Webhooks — Paystack",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "x-paystack-signature", "value": "SIGNATURE" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"event\": \"charge.success\",\n  \"data\": { \"reference\": \"sw_ref\" }\n}"
+        },
+        "url": "{{baseUrl}}/webhooks/paystack"
+      }
+    }
+  ]
+}

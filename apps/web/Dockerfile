@@ -20,5 +20,6 @@ WORKDIR /app
 COPY --from=installer /app .
 
 WORKDIR /app/apps/web
-EXPOSE 3000
-CMD ["npm", "run", "start"]
+EXPOSE 3002
+ENV PORT=3002
+CMD ["npm", "run", "start", "--", "--port", "3002"]

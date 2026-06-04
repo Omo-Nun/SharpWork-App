@@ -2,8 +2,7 @@ import Link from 'next/link';
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-brand-white">
-      {/* Header */}
+    <main id="main-content" className="min-h-screen bg-brand-white">
       <header className="flex justify-between items-center p-6 border-b border-gray-200">
         <div className="text-2xl font-black text-brand-green tracking-tighter">SharpWork</div>
         <nav className="space-x-4">
@@ -12,27 +11,21 @@ export default function LandingPage() {
         </nav>
       </header>
 
-      {/* Hero Section */}
       <section className="flex flex-col items-center text-center pt-24 pb-20 px-6 max-w-4xl mx-auto">
         <h1 className="text-5xl md:text-6xl font-black mb-6 leading-tight">
           Find Reliable Artisans <span className="text-brand-green">Fast.</span>
         </h1>
         <p className="text-lg md:text-xl text-gray-600 mb-10 max-w-2xl">
-          Connect with verified professionals in your area for home repairs, plumbing, electrical work, and more. 
+          Connect with verified professionals in your area for home repairs, plumbing, electrical work, and more.
           Your payment is held securely in escrow until the job is done right.
         </p>
 
-        {/* Search Bar */}
-        <div className="w-full max-w-2xl bg-white p-3 rounded-full shadow-lg border border-gray-100 flex shadow-brand-green/10">
-          <input 
-            type="text" 
-            placeholder="What service do you need? (e.g. Plumber, Electrician)" 
-            className="flex-1 outline-none px-6 text-lg bg-transparent"
-          />
-          <button className="bg-brand-green text-white px-8 py-3 rounded-full font-bold text-lg hover:bg-green-600 transition-transform hover:scale-105 active:scale-95 shadow-md">
-            Search
-          </button>
-        </div>
+        <Link
+          href="/services"
+          className="w-full max-w-2xl bg-brand-green text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-green-600 transition-transform hover:scale-105 shadow-md text-center"
+        >
+          Browse Services Near You
+        </Link>
       </section>
 
       {/* Trust Badges */}

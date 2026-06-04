@@ -23,25 +23,53 @@ enum BookingState {
   REVIEWED
 }
 
-model User {
-  id            String    @id @default(uuid()) @db.Uuid
-  email         String    @unique
-  passwordHash  String
-  phoneNumber   String    @unique
-  role          Role
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  deleted_at    DateTime?
+enum VerificationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
 
-  customerProfile CustomerProfile?
-  artisanProfile  ArtisanProfile?
-  adminProfile    AdminProfile?
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+model User {
+  id              String    @id @default(uuid()) @db.Uuid
+  email           String    @unique
+  passwordHash    String
+  phoneNumber     String    @unique
+  role            Role
+  emailVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deleted_at      DateTime?
+
+  customerProfile           CustomerProfile?
+  artisanProfile            ArtisanProfile?
+  adminProfile              AdminProfile?
+  emailVerificationTokens   EmailVerificationToken[]
 
   bookingsAsCustomer Booking[] @relation("CustomerBookings")
   bookingsAsArtisan  Booking[] @relation("ArtisanBookings")
   messagesSent       Message[] @relation("SenderMessages")
   messagesReceived   Message[] @relation("ReceiverMessages")
   disputesRaised     Dispute[] @relation("DisputesRaised")
+  escrowAuditLogs    EscrowAuditLog[] @relation("EscrowAuditActor")
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model CustomerProfile {
@@ -54,57 +82,163 @@ model CustomerProfile {
 }
 
 model ArtisanProfile {
-  id                String    @id @default(uuid()) @db.Uuid
-  userId            String    @unique @db.Uuid
-  user              User      @relation(fields: [userId], references: [id])
-  firstName         String
-  lastName          String
-  nin               String?   @unique
-  bvn               String?   @unique
-  isVerified        Boolean   @default(false)
-  verificationScore Float?
-  skills            String[]
-  // Location coordinates for PostGIS (lat/lng stored as Float, but we use raw queries for ST_DWithin)
-  latitude          Float?
-  longitude         Float?
-  isOnline          Boolean   @default(false)
-  deleted_at        DateTime?
+  id                  String             @id @default(uuid()) @db.Uuid
+  userId              String             @unique @db.Uuid
+  user                User               @relation(fields: [userId], references: [id])
+  firstName           String
+  lastName            String
+  nin                 String?            @unique
+  bvn                 String?            @unique
+  isVerified          Boolean            @default(false)
+  verificationStatus  VerificationStatus @default(DRAFT)
+  verificationStep    Int                @default(1)
+  verificationScore   Float?
+  rejectionReason     String?
+  skills              String[]
+  portfolioUrls       String[]
+  backgroundConsentAt DateTime?
+  backgroundCheckStatus String?
+  skillTestScore      Int?
+  skillTestPassedAt   DateTime?
+  smileJobId          String?
+  paystackSubaccountCode String?
+  settlementBank      String?
+  accountNumber       String?
+  latitude            Float?
+  longitude           Float?
+  isOnline            Boolean            @default(false)
+  deleted_at          DateTime?
+  references          ArtisanReference[]
+  serviceCategories   ArtisanServiceCategory[]
+}
+
+model ServiceCategory {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String    @unique
+  description String?
+  icon        String?
+  isActive    Boolean   @default(true)
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deleted_at  DateTime?
+  artisans    ArtisanServiceCategory[]
+}
+
+model ArtisanServiceCategory {
+  artisanProfileId String         @db.Uuid
+  categoryId       String         @db.Uuid
+  artisanProfile   ArtisanProfile @relation(fields: [artisanProfileId], references: [id], onDelete: Cascade)
+  category         ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([artisanProfileId, categoryId])
+  @@index([categoryId])
+}
+
+model ArtisanReference {
+  id               String         @id @default(uuid()) @db.Uuid
+  artisanProfileId String         @db.Uuid
+  artisanProfile   ArtisanProfile @relation(fields: [artisanProfileId], references: [id], onDelete: Cascade)
+  fullName         String
+  phoneNumber      String
+  createdAt        DateTime       @default(now())
+
+  @@index([artisanProfileId])
 }
 
 model AdminProfile {
-  id         String    @id @default(uuid()) @db.Uuid
-  userId     String    @unique @db.Uuid
-  user       User      @relation(fields: [userId], references: [id])
-  totpSecret String?
-  deleted_at DateTime?
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @unique @db.Uuid
+  user        User      @relation(fields: [userId], references: [id])
+  totpSecret  String?
+  totpEnabled Boolean   @default(false)
+  deleted_at  DateTime?
+}
+
+model PlatformSetting {
+  id                 String   @id @default("default")
+  platformFeePercent Float    @default(15)
+  updatedAt          DateTime @updatedAt
 }
 
 model Booking {
-  id              String       @id @default(uuid()) @db.Uuid
-  customerId      String       @db.Uuid
-  artisanId       String       @db.Uuid
-  customer        User         @relation("CustomerBookings", fields: [customerId], references: [id])
-  artisan         User         @relation("ArtisanBookings", fields: [artisanId], references: [id])
-  state           BookingState @default(PENDING)
+  id              String        @id @default(uuid()) @db.Uuid
+  customerId      String        @db.Uuid
+  artisanId       String        @db.Uuid
+  customer        User          @relation("CustomerBookings", fields: [customerId], references: [id])
+  artisan         User          @relation("ArtisanBookings", fields: [artisanId], references: [id])
+  state           BookingState  @default(PENDING)
   description     String
   price           Float
-  paystackRef     String?      @unique
-  escrowReleased  Boolean      @default(false)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  scheduledDate   DateTime?
+  scheduledTime   String?
+  serviceAddress  String?
+  latitude        Float?
+  longitude       Float?
+  paystackRef     String?       @unique
+  paymentStatus   PaymentStatus @default(PENDING)
+  categorySlugs   String[]      @default([])
+  platformFeePercent Float?
+  escrowReleased  Boolean       @default(false)
+  escrowReleasedAmount Float    @default(0)
+  artisanCompletedAt DateTime?
+  customerConfirmedAt DateTime?
+  pendingPartialPercent Int?
+  partialRequestedAt DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
   deleted_at      DateTime?
   disputes        Dispute[]
+  messages        Message[]
+  review          Review?
+  escrowAuditLogs EscrowAuditLog[]
+}
+
+model Review {
+  id         String   @id @default(uuid()) @db.Uuid
+  bookingId  String   @unique @db.Uuid
+  booking    Booking  @relation(fields: [bookingId], references: [id])
+  customerId String   @db.Uuid
+  artisanId  String   @db.Uuid
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+
+  @@index([artisanId])
+}
+
+enum ModerationType {
+  REPORT
+  BLOCK
+}
+
+model ModerationReport {
+  id           String         @id @default(uuid()) @db.Uuid
+  reporterId   String         @db.Uuid
+  targetUserId String         @db.Uuid
+  reason       String
+  type         ModerationType @default(REPORT)
+  createdAt    DateTime       @default(now())
+  deleted_at   DateTime?
+
+  @@index([reporterId])
+  @@index([targetUserId])
 }
 
 model Message {
   id         String    @id @default(uuid()) @db.Uuid
   senderId   String    @db.Uuid
   receiverId String    @db.Uuid
+  bookingId  String?   @db.Uuid
   sender     User      @relation("SenderMessages", fields: [senderId], references: [id])
   receiver   User      @relation("ReceiverMessages", fields: [receiverId], references: [id])
+  booking    Booking?  @relation(fields: [bookingId], references: [id])
   content    String
   createdAt  DateTime  @default(now())
   deleted_at DateTime?
+
+  @@index([bookingId])
 }
 
 enum DisputeStatus {
@@ -128,5 +262,20 @@ model Dispute {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   deleted_at    DateTime?
+}
+
+model EscrowAuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  bookingId  String   @db.Uuid
+  booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  actorId    String?  @db.Uuid
+  actor      User?    @relation("EscrowAuditActor", fields: [actorId], references: [id])
+  actorRole  Role?
+  action     String
+  amount     Float?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([bookingId])
 }
 

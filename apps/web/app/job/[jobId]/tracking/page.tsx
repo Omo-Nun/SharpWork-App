@@ -1,73 +1,266 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { GoogleMap } from '../../../../components/GoogleMap';
+import { useAuth } from '../../../../context/AuthContext';
+import { chatStatusMessage, isChatOpen } from '../../../../lib/chat-gating';
+import {
+  fetchBooking,
+  fetchBookingMessages,
+  type ChatMessage,
+} from '../../../../lib/marketplace';
+import {
+  connectSocket,
+  joinBookingRoom,
+  sendChatMessage,
+} from '../../../../lib/socket';
 
-export default function JobTrackingPage({ params }: { params: { jobId: string } }) {
-  const [locationStatus, setLocationStatus] = useState('Fetching live location...');
+interface LocationUpdate {
+  lat: number;
+  lng: number;
+  timestamp: string;
+}
 
-  // Mocking real-time updates since backend/Socket.io is not ready
+export default function JobTrackingPage({ params }: { params: Promise<{ jobId: string }> }) {
+  const { jobId } = use(params);
+  const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
+  const [locationStatus, setLocationStatus] = useState('Waiting for artisan location...');
+  const [coords, setCoords] = useState<LocationUpdate | null>(null);
+  const [bookingState, setBookingState] = useState('');
+  const [paymentStatus, setPaymentStatus] = useState('');
+  const [chatOpen, setChatOpen] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messageInput, setMessageInput] = useState('');
+  const [showChat, setShowChat] = useState(false);
+  const [chatError, setChatError] = useState('');
+  const [peerId, setPeerId] = useState('');
+  const [peerName, setPeerName] = useState('Artisan');
+  const [loadError, setLoadError] = useState('');
+
+  const dashboardPath = user?.role === 'ARTISAN' ? '/dashboard/artisan' : '/dashboard/customer';
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLocationStatus('Artisan is 5 minutes away');
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, []);
+    if (authLoading) return;
+    if (!user) {
+      router.replace(`/auth/login?next=${encodeURIComponent(`/job/${jobId}/tracking`)}`);
+    }
+  }, [authLoading, user, router, jobId]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    fetchBooking(jobId)
+      .then((booking) => {
+        const isCustomer = user.id === booking.customer?.id;
+        const isArtisan = user.id === booking.artisan?.id;
+        if (!isCustomer && !isArtisan) {
+          setLoadError('You do not have access to this job.');
+          return;
+        }
+
+        setBookingState(booking.state);
+        setPaymentStatus(booking.paymentStatus);
+        setChatOpen(booking.chatOpen ?? isChatOpen(booking.state));
+
+        const peer = isCustomer ? booking.artisan : booking.customer;
+        setPeerId(peer?.id || '');
+        const profile = isCustomer ? booking.artisan?.artisanProfile : booking.customer?.customerProfile;
+        setPeerName(profile ? `${profile.firstName} ${profile.lastName}` : 'Participant');
+
+        if (booking.chatOpen ?? isChatOpen(booking.state)) {
+          return fetchBookingMessages(jobId).then(setMessages);
+        }
+        return undefined;
+      })
+      .catch(() => setLoadError('Unable to load booking'));
+  }, [jobId, user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const socket = connectSocket();
+    if (!socket) return;
+
+    joinBookingRoom(jobId);
+
+    const onLocation = (data: LocationUpdate) => {
+      setCoords(data);
+      setLocationStatus(`Artisan at ${data.lat.toFixed(4)}, ${data.lng.toFixed(4)}`);
+    };
+
+    const onMessage = (data: ChatMessage & { timestamp?: string }) => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: data.id || `${Date.now()}`,
+          senderId: data.senderId,
+          receiverId: data.receiverId,
+          content: data.content,
+          createdAt: data.createdAt || data.timestamp || new Date().toISOString(),
+        },
+      ]);
+    };
+
+    const onStateChanged = (data: { state: string }) => {
+      setBookingState(data.state);
+      const open = isChatOpen(data.state);
+      setChatOpen(open);
+      if (!open) {
+        setShowChat(false);
+        setChatError('Chat closed — this job is complete.');
+      }
+    };
+
+    const onChatError = (data: { code?: string; message?: string }) => {
+      setChatError(data.message || 'Unable to send message.');
+    };
+
+    socket.on('location:update', onLocation);
+    socket.on('chat:message', onMessage);
+    socket.on('booking:state_changed', onStateChanged);
+    socket.on('chat:error', onChatError);
+
+    return () => {
+      socket.off('location:update', onLocation);
+      socket.off('chat:message', onMessage);
+      socket.off('booking:state_changed', onStateChanged);
+      socket.off('chat:error', onChatError);
+    };
+  }, [jobId, user]);
+
+  const handleSendMessage = () => {
+    if (!chatOpen || !messageInput.trim() || !peerId || !user) return;
+    setChatError('');
+    sendChatMessage(jobId, peerId, messageInput.trim());
+    setMessageInput('');
+  };
+
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="w-12 h-12 border-4 border-brand-green/30 border-t-brand-green rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-6">
+        <p className="text-red-600 mb-4">{loadError}</p>
+        <Link href={dashboardPath} className="text-brand-green font-bold">← Back to dashboard</Link>
+      </div>
+    );
+  }
+
+  const statusMessage = chatStatusMessage(bookingState, paymentStatus);
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
-      {/* Header */}
       <div className="bg-white shadow-sm border-b px-4 py-4 flex items-center justify-between z-10">
         <div className="flex items-center gap-4">
-          <Link href="/dashboard/customer" className="text-[#0D2B5E] hover:underline font-medium">
+          <Link href={dashboardPath} className="text-[#0D2B5E] hover:underline font-medium">
             &larr; Back to Dashboard
           </Link>
-          <h1 className="text-xl font-bold text-gray-900">Job Tracking: #{params.jobId}</h1>
+          <h1 className="text-xl font-bold text-gray-900">Job Tracking</h1>
         </div>
         <div className="flex items-center gap-2">
-          <span className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-[#007A52]"></span>
-          </span>
-          <span className="text-sm font-medium text-gray-700">Live</span>
+          {bookingState === 'IN_PROGRESS' && (
+            <>
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-[#007A52]" />
+              </span>
+              <span className="text-sm font-medium text-gray-700">Live • {bookingState}</span>
+            </>
+          )}
+          {bookingState !== 'IN_PROGRESS' && (
+            <span className="text-sm font-medium text-gray-700 uppercase">{bookingState}</span>
+          )}
         </div>
       </div>
 
-      {/* Map Area (Placeholder for Google Maps JS API) */}
       <div className="flex-1 relative bg-gray-200">
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          {/* Map Placeholder Graphic */}
-          <svg className="h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-          </svg>
-          <p className="text-lg font-medium text-gray-600">Google Maps Interface</p>
-          <p className="text-sm text-gray-500 mt-1 max-w-md text-center">
-            The Google Maps API key will be added later. This area will render the live tracking map showing the artisan's background geolocation.
-          </p>
-        </div>
+        {bookingState === 'IN_PROGRESS' && coords ? (
+          <GoogleMap
+            lat={coords.lat}
+            lng={coords.lng}
+            className="absolute inset-0 w-full h-full"
+            label={`Artisan location • ${bookingState}`}
+          />
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+            <p className="text-lg font-medium text-gray-700">
+              {bookingState === 'IN_PROGRESS' ? locationStatus : statusMessage}
+            </p>
+            {bookingState === 'IN_PROGRESS' && (
+              <p className="text-sm text-gray-400 mt-4 max-w-md">
+                Live coordinates stream via Socket.io when the artisan is en route.
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Info Card Overlay (Bottom) */}
       <div className="bg-white shadow-lg rounded-t-2xl px-6 py-6 border-t z-10 -mt-4 relative">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Status Update</h2>
-            <p className="text-sm text-[#007A52] font-medium mt-1">{locationStatus}</p>
-          </div>
-          <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
-            <img className="h-12 w-12 rounded-full object-cover" src="https://ui-avatars.com/api/?name=Artisan&background=F56500&color=fff" alt="Artisan" />
+            <h2 className="text-lg font-bold text-gray-900">{peerName}</h2>
+            <p className="text-sm text-[#007A52] font-medium mt-1">{statusMessage}</p>
           </div>
         </div>
 
+        {chatError && (
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            {chatError}
+          </div>
+        )}
+
+        {showChat && chatOpen && (
+          <div className="mb-4 border rounded-xl p-3 max-h-40 overflow-y-auto bg-gray-50">
+            {messages.length === 0 ? (
+              <p className="text-sm text-gray-400">No messages yet. Say hello to coordinate the job.</p>
+            ) : (
+              messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`text-sm mb-2 ${msg.senderId === user.id ? 'text-right text-brand-navy' : 'text-left text-gray-600'}`}
+                >
+                  {msg.content}
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {showChat && chatOpen && (
+          <div className="flex gap-2 mb-4">
+            <input
+              value={messageInput}
+              onChange={(e) => setMessageInput(e.target.value)}
+              placeholder="Type a message..."
+              className="flex-1 border rounded-lg px-3 py-2 text-sm"
+              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+            />
+            <button onClick={handleSendMessage} className="bg-brand-green text-white px-4 rounded-lg font-bold text-sm">
+              Send
+            </button>
+          </div>
+        )}
+
         <div className="border-t pt-4 flex gap-4">
-          <button className="flex-1 bg-[#0D2B5E] text-white py-3 rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:bg-[#0D2B5E]/90">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-            Call Artisan
-          </button>
-          <button className="flex-1 bg-white border border-gray-300 text-gray-700 py-3 rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:bg-gray-50">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-            Message
-          </button>
+          {chatOpen ? (
+            <button
+              onClick={() => setShowChat((v) => !v)}
+              className="flex-1 bg-[#0D2B5E] text-white py-3 rounded-xl font-medium text-sm hover:bg-[#0D2B5E]/90"
+            >
+              {showChat ? 'Hide Chat' : 'Open Chat'}
+            </button>
+          ) : (
+            <p className="flex-1 text-center text-sm text-gray-500 py-3">{statusMessage}</p>
+          )}
         </div>
       </div>
     </div>

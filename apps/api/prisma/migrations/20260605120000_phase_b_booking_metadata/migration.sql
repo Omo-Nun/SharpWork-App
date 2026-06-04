@@ -1,0 +1,2 @@
+ALTER TABLE "Booking" ADD COLUMN "categorySlugs" TEXT[] DEFAULT ARRAY[]::TEXT[];
+ALTER TABLE "Booking" ADD COLUMN "platformFeePercent" DOUBLE PRECISION;

@@ -2,27 +2,54 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { apiPost, ApiError } from '../../../lib/api';
 
 export default function ResetPasswordPage() {
   const [step, setStep] = useState<1 | 2>(1);
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleRequestOTP = (e: React.FormEvent) => {
-    e.preventDefault();
-    // TODO: Connect to backend API to trigger Termii SMS OTP
-    console.log('Requesting OTP for', phone);
-    setStep(2);
-  };
+  async function handleRequestOTP(event: React.FormEvent) {
+    event.preventDefault();
+    setError('');
+    setMessage('');
+    setLoading(true);
 
-  const handleResetPassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    // TODO: Connect to backend API to verify OTP and reset password
-    console.log('Resetting password with OTP:', otp);
-    alert('Password reset successful! You can now login.');
-    window.location.href = '/auth/login';
-  };
+    try {
+      const result = await apiPost<{ message: string }>('/auth/forgot-password', {
+        phoneNumber: phone,
+      });
+      setMessage(result.message);
+      setStep(2);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to send OTP.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleResetPassword(event: React.FormEvent) {
+    event.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      await apiPost('/auth/reset-password', {
+        phoneNumber: phone,
+        otp,
+        newPassword,
+      });
+      window.location.href = '/auth/login';
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to reset password.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -32,92 +59,104 @@ export default function ResetPasswordPage() {
             Reset your password
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            {step === 1 ? "We'll send an OTP to your registered phone number." : "Enter the 6-digit OTP sent to your phone."}
+            {step === 1
+              ? "We'll send a 6-digit OTP to your registered phone number via SMS."
+              : 'Enter the OTP sent to your phone and choose a new password.'}
           </p>
         </div>
 
+        {error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+        )}
+        {message && (
+          <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{message}</div>
+        )}
+
         {step === 1 ? (
           <form className="mt-8 space-y-6" onSubmit={handleRequestOTP}>
-            <div className="rounded-md shadow-sm -space-y-px">
-              <div>
-                <label htmlFor="phone" className="sr-only">Phone Number</label>
-                <input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  required
-                  className="relative block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-[#0D2B5E] focus:outline-none focus:ring-[#0D2B5E] sm:text-sm"
-                  placeholder="Phone Number (e.g., +2348012345678)"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
-              </div>
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                Phone Number
+              </label>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                required
+                className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-brand-navy focus:outline-none focus:ring-brand-navy sm:text-sm"
+                placeholder="+2348012345678"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
             </div>
 
-            <div>
-              <button
-                type="submit"
-                className="group relative flex w-full justify-center rounded-md border border-transparent bg-[#0D2B5E] py-2 px-4 text-sm font-medium text-white hover:bg-[#0D2B5E]/90 focus:outline-none focus:ring-2 focus:ring-[#0D2B5E] focus:ring-offset-2"
-              >
-                Send OTP
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-md bg-brand-navy py-2 px-4 text-sm font-medium text-white hover:bg-brand-navy/90 disabled:opacity-60"
+            >
+              {loading ? 'Sending...' : 'Send OTP'}
+            </button>
           </form>
         ) : (
           <form className="mt-8 space-y-6" onSubmit={handleResetPassword}>
-            <div className="space-y-4 rounded-md shadow-sm">
+            <div className="space-y-4">
               <div>
-                <label htmlFor="otp" className="sr-only">OTP</label>
+                <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-2">
+                  OTP Code
+                </label>
                 <input
                   id="otp"
                   name="otp"
                   type="text"
                   required
                   maxLength={6}
-                  className="relative block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-[#0D2B5E] focus:outline-none focus:ring-[#0D2B5E] sm:text-sm text-center tracking-widest text-lg font-mono"
+                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-center tracking-widest text-lg font-mono focus:border-brand-navy focus:outline-none focus:ring-brand-navy sm:text-sm"
                   placeholder="------"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
                 />
               </div>
               <div>
-                <label htmlFor="new-password" className="sr-only">New Password</label>
+                <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 mb-2">
+                  New Password
+                </label>
                 <input
                   id="new-password"
                   name="password"
                   type="password"
                   required
-                  className="relative block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-[#0D2B5E] focus:outline-none focus:ring-[#0D2B5E] sm:text-sm"
-                  placeholder="New Password"
+                  minLength={8}
+                  className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-brand-navy focus:outline-none focus:ring-brand-navy sm:text-sm"
+                  placeholder="At least 8 characters"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                 />
               </div>
             </div>
 
-            <div>
-              <button
-                type="submit"
-                className="group relative flex w-full justify-center rounded-md border border-transparent bg-[#F56500] py-2 px-4 text-sm font-medium text-white hover:bg-[#F56500]/90 focus:outline-none focus:ring-2 focus:ring-[#F56500] focus:ring-offset-2"
-              >
-                Confirm Reset
-              </button>
-            </div>
-            
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-md bg-brand-orange py-2 px-4 text-sm font-medium text-white hover:bg-brand-orange/90 disabled:opacity-60"
+            >
+              {loading ? 'Resetting...' : 'Confirm Reset'}
+            </button>
+
             <div className="text-center">
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="text-sm font-medium text-[#0D2B5E] hover:underline"
+                className="text-sm font-medium text-brand-navy hover:underline"
               >
-                Didn't receive code? Try again
+                Didn&apos;t receive code? Try again
               </button>
             </div>
           </form>
         )}
-        
+
         <div className="text-center mt-4">
-          <Link href="/auth/login" className="font-medium text-sm text-[#0D2B5E] hover:underline">
+          <Link href="/auth/login" className="font-medium text-sm text-brand-navy hover:underline">
             Back to login
           </Link>
         </div>

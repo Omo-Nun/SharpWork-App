@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware';
 export interface BookingState {
   step: number;
   artisanId: string | null;
+  categorySlugs: string[];
   serviceDetails: string;
   scheduledDate: string | null;
   scheduledTime: string | null;
@@ -13,8 +14,7 @@ export interface BookingState {
     lng: number | null;
   };
   priceEstimate: number | null;
-  
-  // Actions
+
   setStep: (step: number) => void;
   nextStep: () => void;
   prevStep: () => void;
@@ -25,6 +25,7 @@ export interface BookingState {
 const initialState = {
   step: 1,
   artisanId: null,
+  categorySlugs: [] as string[],
   serviceDetails: '',
   scheduledDate: null,
   scheduledTime: null,
@@ -43,7 +44,7 @@ export const useBookingStore = create<BookingState>()(
       resetBooking: () => set(initialState),
     }),
     {
-      name: 'sharpwork-booking-storage', // unique name for localStorage key
+      name: 'sharpwork-booking-storage',
     }
   )
 );

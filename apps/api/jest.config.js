@@ -1,9 +1,34 @@
+const path = require('path');
+
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
+  setupFiles: ['<rootDir>/jest.setup.ts'],
   testMatch: ['**/__tests__/**/*.test.ts', '**/?(*.)+(spec|test).ts'],
   moduleFileExtensions: ['ts', 'js', 'json', 'node'],
   collectCoverage: true,
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov'],
+  collectCoverageFrom: [
+    'src/lib/booking-state.ts',
+    'src/lib/skillTest.ts',
+    'src/middleware/validate.ts',
+    'src/middleware/errorHandler.ts',
+    'src/utils/jwt.ts',
+    'src/utils/cookies.ts',
+  ],
+  coverageThreshold: {
+    './src/lib/booking-state.ts': { branches: 100, functions: 100, lines: 100, statements: 100 },
+    './src/lib/skillTest.ts': { branches: 80, functions: 80, lines: 80, statements: 80 },
+    './src/middleware/validate.ts': { branches: 80, functions: 80, lines: 80, statements: 80 },
+    './src/middleware/errorHandler.ts': { branches: 80, functions: 80, lines: 80, statements: 80 },
+    './src/utils/jwt.ts': { branches: 50, functions: 100, lines: 100, statements: 100 },
+    './src/utils/cookies.ts': { branches: 100, functions: 100, lines: 100, statements: 100 },
+  },
+  moduleNameMapper: {
+    '^otplib$': path.join(__dirname, '../../node_modules/otplib/dist/index.cjs'),
+  },
+  transformIgnorePatterns: [
+    'node_modules/(?!(@scure|@noble|@otplib|otplib)/)',
+  ],
 };

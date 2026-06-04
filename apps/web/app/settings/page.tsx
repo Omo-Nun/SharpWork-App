@@ -2,24 +2,38 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { apiDelete, ApiError } from '../../lib/api';
+import { getAccessToken } from '../../lib/auth-storage';
+import { useAuth } from '../../context/AuthContext';
+import { DashboardNav } from '../../components/DashboardNav';
 
 export default function SettingsPage() {
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'danger'>('profile');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
-  const handleDeleteAccount = () => {
-    if (confirm("Are you absolutely sure? This will soft-delete your account and remove your profile from public view. This action cannot be easily undone.")) {
-      setIsDeleting(true);
-      // TODO: Call API endpoint for soft delete
-      setTimeout(() => {
-        alert("Account marked as deleted. Redirecting...");
-        window.location.href = '/';
-      }, 1500);
+  const handleDeleteAccount = async () => {
+    if (!confirm('Are you absolutely sure? This will soft-delete your account and remove your profile from public view.')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    setDeleteError('');
+
+    try {
+      await apiDelete('/auth/account', getAccessToken());
+      await logout();
+    } catch (err) {
+      setDeleteError(err instanceof ApiError ? err.message : 'Failed to delete account.');
+      setIsDeleting(false);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50">
+      <DashboardNav variant={user?.role === 'ARTISAN' ? 'artisan' : 'customer'} />
+      <div className="max-w-4xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Account Settings</h1>
       
       <div className="flex flex-col md:flex-row gap-8">
@@ -53,15 +67,19 @@ export default function SettingsPage() {
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">First Name</label>
-                  <input type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#0D2B5E] focus:ring-[#0D2B5E] sm:text-sm border p-2" defaultValue="John" />
+                  <input type="text" readOnly className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm border p-2 bg-gray-50" defaultValue={user?.profile?.firstName ?? ''} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Last Name</label>
-                  <input type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#0D2B5E] focus:ring-[#0D2B5E] sm:text-sm border p-2" defaultValue="Doe" />
+                  <input type="text" readOnly className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm border p-2 bg-gray-50" defaultValue={user?.profile?.lastName ?? ''} />
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700">Email Address</label>
-                  <input type="email" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#0D2B5E] focus:ring-[#0D2B5E] sm:text-sm border p-2 bg-gray-50" defaultValue="john@example.com" disabled />
+                  <input type="email" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm border p-2 bg-gray-50" defaultValue={user?.email ?? ''} disabled />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700">Phone Number</label>
+                  <input type="tel" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm border p-2 bg-gray-50" defaultValue={user?.phoneNumber ?? ''} disabled />
                 </div>
               </div>
               <div className="flex justify-end">
@@ -98,9 +116,18 @@ export default function SettingsPage() {
                 <h3 className="text-lg font-medium text-red-800">Delete Account</h3>
                 <p className="mt-2 text-sm text-red-700">
                   Once you delete your account, your profile will be hidden and you will lose access to SharpWork services.
-                  This action is compliant with App Store and Play Store guidelines.
                 </p>
+                {deleteError && (
+                  <p className="mt-3 text-sm text-red-700">{deleteError}</p>
+                )}
                 <div className="mt-4">
+                  <button
+                    onClick={() => logout()}
+                    disabled={isDeleting}
+                    className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 disabled:opacity-50 mr-3"
+                  >
+                    Log Out
+                  </button>
                   <button 
                     onClick={handleDeleteAccount}
                     disabled={isDeleting}
@@ -113,6 +140,7 @@ export default function SettingsPage() {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

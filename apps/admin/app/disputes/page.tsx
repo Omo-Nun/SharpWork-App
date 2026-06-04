@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { apiGet, apiPatch } from '../../lib/api';
+import { getAccessToken } from '../../lib/auth-storage';
 
 type DisputeStatus = 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED' | 'ESCALATED';
 
@@ -9,6 +11,7 @@ interface Dispute {
   reason: string;
   status: DisputeStatus;
   escrowFrozen: boolean;
+  adminNotes: string | null;
   createdAt: string;
   booking: {
     id: string;
@@ -27,103 +30,88 @@ const STATUS_COLORS: Record<DisputeStatus, string> = {
   ESCALATED: 'bg-purple-100 text-purple-700',
 };
 
-// Mock data for scaffolding
-const mockDisputes: Dispute[] = [
-  {
-    id: 'd-001',
-    reason: 'Artisan did not complete the job. Bathroom still leaking.',
-    status: 'OPEN',
-    escrowFrozen: true,
-    createdAt: '2026-05-30T10:00:00Z',
-    booking: { id: 'b-101', description: 'Fix bathroom leak', price: 15000, customer: { email: 'john@email.com' }, artisan: { email: 'jane@email.com' } },
-    raisedBy: { email: 'john@email.com' },
-  },
-  {
-    id: 'd-002',
-    reason: 'Customer claims work was not done but artisan has photo evidence.',
-    status: 'ESCALATED',
-    escrowFrozen: true,
-    createdAt: '2026-05-29T14:00:00Z',
-    booking: { id: 'b-099', description: 'Electrical rewiring', price: 45000, customer: { email: 'mike@email.com' }, artisan: { email: 'tom@email.com' } },
-    raisedBy: { email: 'mike@email.com' },
-  },
-  {
-    id: 'd-003',
-    reason: 'Overcharging — agreed ₦10,000 but billed ₦18,000.',
-    status: 'UNDER_REVIEW',
-    escrowFrozen: true,
-    createdAt: '2026-05-28T09:30:00Z',
-    booking: { id: 'b-095', description: 'Paint living room', price: 18000, customer: { email: 'ada@email.com' }, artisan: { email: 'chidi@email.com' } },
-    raisedBy: { email: 'ada@email.com' },
-  },
-];
-
 export default function DisputeCentre() {
+  const [disputes, setDisputes] = useState<Dispute[]>([]);
   const [selectedDispute, setSelectedDispute] = useState<Dispute | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  const loadDisputes = () => {
+    apiGet<Dispute[]>('/admin/disputes', getAccessToken())
+      .then(setDisputes)
+      .catch(() => setDisputes([]))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadDisputes();
+  }, []);
+
+  useEffect(() => {
+    setAdminNotes(selectedDispute?.adminNotes || '');
+  }, [selectedDispute]);
+
+  const updateDispute = async (status: DisputeStatus, resolution?: 'refund_customer' | 'release_artisan') => {
+    if (!selectedDispute) return;
+
+    await apiPatch(
+      `/admin/disputes/${selectedDispute.id}`,
+      { status, adminNotes, escrowFrozen: status !== 'RESOLVED', ...(resolution ? { resolution } : {}) },
+      getAccessToken()
+    );
+
+    loadDisputes();
+    setSelectedDispute(null);
+  };
+
+  if (loading) {
+    return <p className="text-gray-500">Loading disputes...</p>;
+  }
 
   return (
     <div>
       <h1 className="text-3xl font-black mb-8">Dispute Centre</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Dispute List */}
         <div className="lg:col-span-2 space-y-4">
-          {mockDisputes.map((dispute) => (
-            <button
-              key={dispute.id}
-              onClick={() => setSelectedDispute(dispute)}
-              className={`w-full text-left bg-white p-5 rounded-xl shadow-sm border transition-all hover:shadow-md ${
-                selectedDispute?.id === dispute.id ? 'ring-2 ring-brand-green' : ''
-              }`}
-            >
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <p className="font-bold text-lg">{dispute.booking.description}</p>
-                  <p className="text-sm text-gray-500">Raised by: {dispute.raisedBy.email}</p>
+          {disputes.length === 0 ? (
+            <div className="bg-white p-8 rounded-xl border text-gray-500">No disputes found.</div>
+          ) : (
+            disputes.map((dispute) => (
+              <button
+                key={dispute.id}
+                onClick={() => setSelectedDispute(dispute)}
+                className={`w-full text-left bg-white p-5 rounded-xl shadow-sm border transition-all hover:shadow-md ${
+                  selectedDispute?.id === dispute.id ? 'ring-2 ring-brand-green' : ''
+                }`}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <p className="font-bold text-lg">{dispute.booking.description}</p>
+                    <p className="text-sm text-gray-500">Raised by: {dispute.raisedBy.email}</p>
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-sm font-bold ${STATUS_COLORS[dispute.status]}`}>
+                    {dispute.status}
+                  </span>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-sm font-bold ${STATUS_COLORS[dispute.status]}`}>
-                  {dispute.status}
-                </span>
-              </div>
-              <p className="text-gray-600 text-sm">{dispute.reason}</p>
-              <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
-                <span>Booking: {dispute.booking.id}</span>
-                <span>Amount: ₦{dispute.booking.price.toLocaleString()}</span>
-                {dispute.escrowFrozen && <span className="text-red-500 font-bold">🔒 ESCROW FROZEN</span>}
-              </div>
-            </button>
-          ))}
+                <p className="text-gray-600 text-sm">{dispute.reason}</p>
+                <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
+                  <span>Amount: ₦{dispute.booking.price.toLocaleString()}</span>
+                  {dispute.escrowFrozen && <span className="text-red-500 font-bold">ESCROW FROZEN</span>}
+                </div>
+              </button>
+            ))
+          )}
         </div>
 
-        {/* Detail Panel */}
         <div className="bg-white rounded-xl shadow-sm border p-6">
           {selectedDispute ? (
             <>
               <h2 className="text-xl font-bold mb-4">Dispute Details</h2>
               <div className="space-y-3 text-sm">
-                <div>
-                  <span className="text-gray-500">Dispute ID:</span>
-                  <span className="ml-2 font-mono">{selectedDispute.id}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500">Customer:</span>
-                  <span className="ml-2">{selectedDispute.booking.customer.email}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500">Artisan:</span>
-                  <span className="ml-2">{selectedDispute.booking.artisan.email}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500">Amount:</span>
-                  <span className="ml-2 font-bold">₦{selectedDispute.booking.price.toLocaleString()}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500">Escrow:</span>
-                  <span className={`ml-2 font-bold ${selectedDispute.escrowFrozen ? 'text-red-600' : 'text-green-600'}`}>
-                    {selectedDispute.escrowFrozen ? 'Frozen' : 'Released'}
-                  </span>
-                </div>
+                <div><span className="text-gray-500">Customer:</span> {selectedDispute.booking.customer.email}</div>
+                <div><span className="text-gray-500">Artisan:</span> {selectedDispute.booking.artisan.email}</div>
+                <div><span className="text-gray-500">Amount:</span> ₦{selectedDispute.booking.price.toLocaleString()}</div>
               </div>
 
               <div className="border-t mt-6 pt-4">
@@ -131,27 +119,41 @@ export default function DisputeCentre() {
                 <textarea
                   className="w-full p-3 border rounded-lg text-sm outline-brand-green"
                   rows={3}
-                  placeholder="Add your mediation notes..."
                   value={adminNotes}
                   onChange={(e) => setAdminNotes(e.target.value)}
                 />
               </div>
 
               <div className="mt-4 space-y-2">
-                <button className="w-full bg-yellow-500 text-white py-2 rounded-lg font-bold hover:bg-yellow-600 transition-colors">
+                <button
+                  onClick={() => updateDispute('UNDER_REVIEW')}
+                  className="w-full bg-yellow-500 text-white py-2 rounded-lg font-bold"
+                >
                   Mark Under Review
                 </button>
-                <button className="w-full bg-brand-green text-white py-2 rounded-lg font-bold hover:bg-green-600 transition-colors">
-                  Resolve & Release Escrow
+                <button
+                  onClick={() => updateDispute('RESOLVED', 'release_artisan')}
+                  className="w-full bg-brand-green text-white py-2 rounded-lg font-bold"
+                >
+                  Resolve & Release to Artisan
                 </button>
-                <button className="w-full bg-red-600 text-white py-2 rounded-lg font-bold hover:bg-red-700 transition-colors">
+                <button
+                  onClick={() => updateDispute('RESOLVED', 'refund_customer')}
+                  className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold"
+                >
+                  Resolve & Refund Customer
+                </button>
+                <button
+                  onClick={() => updateDispute('ESCALATED')}
+                  className="w-full bg-red-600 text-white py-2 rounded-lg font-bold"
+                >
                   Escalate
                 </button>
               </div>
             </>
           ) : (
             <div className="flex items-center justify-center h-full text-gray-400 text-center py-20">
-              <p>Select a dispute from the list to view details and take action.</p>
+              Select a dispute to view details and take action.
             </div>
           )}
         </div>

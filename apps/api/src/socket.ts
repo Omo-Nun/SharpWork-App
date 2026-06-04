@@ -1,51 +1,138 @@
-import { Server as SocketIOServer } from 'socket.io';
+import { Server as SocketIOServer, Socket } from 'socket.io';
 import { Server as HttpServer } from 'http';
+import { verifyAccessToken } from './utils/jwt';
+import prisma from './prisma';
+import { isChatOpenForBooking } from './lib/chat-gating';
 
 let io: SocketIOServer;
+
+interface AuthenticatedSocket extends Socket {
+  data: {
+    userId: string;
+    role: string;
+  };
+}
+
+async function getBookingForParticipant(bookingId: string, userId: string) {
+  return prisma.booking.findFirst({
+    where: {
+      id: bookingId,
+      deleted_at: null,
+      OR: [{ customerId: userId }, { artisanId: userId }],
+    },
+    select: { id: true, state: true },
+  });
+}
+
+async function isBookingParticipant(bookingId: string, userId: string): Promise<boolean> {
+  const booking = await getBookingForParticipant(bookingId, userId);
+  return Boolean(booking);
+}
 
 export function initSocketIO(httpServer: HttpServer) {
   io = new SocketIOServer(httpServer, {
     cors: {
-      origin: '*',
+      origin: true,
       methods: ['GET', 'POST'],
+      credentials: true,
     },
   });
 
-  io.on('connection', (socket) => {
-    console.log(`[Socket.io] Client connected: ${socket.id}`);
+  io.use((socket, next) => {
+    const token = socket.handshake.auth?.token as string | undefined;
+    if (!token) {
+      next(new Error('Unauthorized'));
+      return;
+    }
 
-    // Join a personal room based on userId
-    socket.on('join', (userId: string) => {
-      socket.join(`user:${userId}`);
-      console.log(`[Socket.io] User ${userId} joined room user:${userId}`);
-    });
+    try {
+      const decoded = verifyAccessToken(token) as { userId: string; role: string };
+      socket.data.userId = decoded.userId;
+      socket.data.role = decoded.role;
+      next();
+    } catch {
+      next(new Error('Unauthorized'));
+    }
+  });
 
-    // Join a booking-specific room for real-time updates
-    socket.on('join:booking', (bookingId: string) => {
+  io.on('connection', (socket: AuthenticatedSocket) => {
+    const userId = socket.data.userId;
+    socket.join(`user:${userId}`);
+
+    socket.on('join:booking', async (bookingId: string) => {
+      if (!bookingId || !(await isBookingParticipant(bookingId, userId))) {
+        return;
+      }
       socket.join(`booking:${bookingId}`);
-      console.log(`[Socket.io] Socket ${socket.id} joined booking:${bookingId}`);
     });
 
-    // Chat message within a booking
-    socket.on('chat:message', (data: { bookingId: string; senderId: string; content: string }) => {
-      io.to(`booking:${data.bookingId}`).emit('chat:message', {
-        senderId: data.senderId,
-        content: data.content,
-        timestamp: new Date().toISOString(),
+    socket.on('chat:message', async (data: { bookingId: string; receiverId: string; content: string }) => {
+      const content = typeof data.content === 'string' ? data.content.trim() : '';
+      if (!data.bookingId || !data.receiverId || content.length < 1 || content.length > 2000) {
+        return;
+      }
+
+      const booking = await getBookingForParticipant(data.bookingId, userId);
+      if (!booking) {
+        return;
+      }
+
+      if (!isChatOpenForBooking(booking.state)) {
+        socket.emit('chat:error', {
+          code: 'CHAT_CLOSED',
+          message: 'Chat is only available after the artisan accepts and before job completion.',
+        });
+        return;
+      }
+
+      try {
+        const message = await prisma.message.create({
+          data: {
+            senderId: userId,
+            receiverId: data.receiverId,
+            bookingId: data.bookingId,
+            content,
+          },
+        });
+
+        const payload = {
+          id: message.id,
+          bookingId: data.bookingId,
+          senderId: userId,
+          receiverId: data.receiverId,
+          content,
+          timestamp: message.createdAt.toISOString(),
+        };
+
+        io.to(`booking:${data.bookingId}`).emit('chat:message', payload);
+      } catch (error) {
+        console.error('[Socket.io] chat:message error:', error);
+      }
+    });
+
+    socket.on('location:update', async (data: { bookingId: string; lat: number; lng: number }) => {
+      if (!data.bookingId || typeof data.lat !== 'number' || typeof data.lng !== 'number') {
+        return;
+      }
+
+      const booking = await prisma.booking.findFirst({
+        where: {
+          id: data.bookingId,
+          artisanId: userId,
+          state: 'IN_PROGRESS',
+          deleted_at: null,
+        },
       });
-    });
 
-    // Location update from artisan during IN_PROGRESS
-    socket.on('location:update', (data: { bookingId: string; lat: number; lng: number }) => {
+      if (!booking) {
+        return;
+      }
+
       io.to(`booking:${data.bookingId}`).emit('location:update', {
         lat: data.lat,
         lng: data.lng,
         timestamp: new Date().toISOString(),
       });
-    });
-
-    socket.on('disconnect', () => {
-      console.log(`[Socket.io] Client disconnected: ${socket.id}`);
     });
   });
 
@@ -59,18 +146,12 @@ export function getIO(): SocketIOServer {
   return io;
 }
 
-/**
- * Emit a real-time notification to a specific user.
- */
 export function emitToUser(userId: string, event: string, data: unknown) {
   if (io) {
     io.to(`user:${userId}`).emit(event, data);
   }
 }
 
-/**
- * Emit a real-time update to all participants in a booking room.
- */
 export function emitToBooking(bookingId: string, event: string, data: unknown) {
   if (io) {
     io.to(`booking:${bookingId}`).emit(event, data);

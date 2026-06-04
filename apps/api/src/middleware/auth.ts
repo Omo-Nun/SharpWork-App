@@ -1,11 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken } from '../utils/jwt';
+import { setRlsContext } from './rls';
 
 export interface AuthRequest extends Request {
-  user?: any;
+  user?: { userId: string; role: string };
 }
 
-export const authenticate = (req: AuthRequest, res: Response, next: NextFunction): void => {
+export const authenticate = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -21,12 +26,12 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
   }
 
   try {
-    const decoded = verifyAccessToken(token);
+    const decoded = verifyAccessToken(token) as { userId: string; role: string };
     req.user = decoded;
+    await setRlsContext(decoded.userId, decoded.role);
     next();
-  } catch (error) {
+  } catch {
     res.status(401).json({ error: 'Invalid or expired token' });
-    return;
   }
 };
 

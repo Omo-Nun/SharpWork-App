@@ -21,4 +21,5 @@ COPY --from=installer /app .
 
 WORKDIR /app/apps/admin
 EXPOSE 3001
-CMD ["npm", "run", "start"]
+ENV PORT=3001
+CMD ["npm", "run", "start", "--", "--port", "3001"]
