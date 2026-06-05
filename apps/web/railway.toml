@@ -1,6 +1,5 @@
-# Railway service: name this service "web"
-# Root directory: repository root (.)
-# Config path: apps/web/railway.toml
+# Deprecated: use root railway.toml (repo root) for all services.
+# Kept for reference if you set Config path to apps/web/railway.toml.
 
 [build]
 builder = "NIXPACKS"

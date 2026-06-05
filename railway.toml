@@ -1,0 +1,29 @@
+# SharpWork monorepo — use this for ALL Railway services (api, web, admin).
+# Root directory: repository root (.)
+# Do NOT set a custom config path; Railway reads this file automatically.
+# Service names must contain: api, web, or admin (e.g. "web", "web-production").
+
+[build]
+builder = "NIXPACKS"
+buildCommand = "npm run railway:build"
+watchPatterns = [
+  "apps/**",
+  "packages/**",
+  "package.json",
+  "package-lock.json",
+  "nixpacks.toml",
+  "railpack.json",
+  "railway.toml",
+  "scripts/railway.mjs",
+]
+
+[deploy]
+startCommand = "npm run railway:start"
+healthcheckPath = "/"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[environments.production.variables]
+NODE_ENV = "production"
+HOSTNAME = "0.0.0.0"

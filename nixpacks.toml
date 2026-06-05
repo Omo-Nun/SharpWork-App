@@ -9,3 +9,6 @@ nixPkgs = ["nodejs_20", "python3", "gcc"]
 
 [phases.install]
 cmds = ["npm ci"]
+
+[start]
+cmd = "npm run railway:start"

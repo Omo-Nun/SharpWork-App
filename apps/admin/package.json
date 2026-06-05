@@ -10,7 +10,7 @@
     "dev": "next dev --port 3001",
     "build": "next build && npm run copy-standalone-assets",
     "copy-standalone-assets": "cp -r .next/static .next/standalone/apps/admin/.next/static && cp -r public .next/standalone/apps/admin/public 2>/dev/null || true",
-    "start": "node .next/standalone/apps/admin/server.js",
+    "start": "HOSTNAME=0.0.0.0 node .next/standalone/apps/admin/server.js",
     "lint": "eslint --max-warnings 0",
     "check-types": "next typegen && tsc --noEmit",
     "test": "echo \"No admin tests configured\" && exit 0"

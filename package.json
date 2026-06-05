@@ -18,6 +18,9 @@
     "start:api": "npm run start:prod --workspace=api",
     "start:web": "npm run start --workspace=web",
     "start:admin": "npm run start --workspace=admin",
+    "railway:build": "node scripts/railway.mjs build",
+    "railway:start": "node scripts/railway.mjs start",
+    "start": "npm run railway:start",
     "seed": "npm run seed --workspace=api",
     "db:setup": "npm run db:setup --workspace=api"
   },

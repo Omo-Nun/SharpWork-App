@@ -1,6 +1,5 @@
-# Railway service: name this service "api" (required for web/admin private networking).
-# Root directory for all three services: repository root (.)
-# Config path (Settings → Config-as-code): apps/api/railway.toml
+# Deprecated: use root railway.toml (repo root) for all services.
+# Kept for reference if you set Config path to apps/api/railway.toml.
 
 [build]
 builder = "NIXPACKS"
