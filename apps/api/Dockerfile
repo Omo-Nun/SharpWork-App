@@ -19,7 +19,7 @@ COPY --from=base /app/out/full/ .
 RUN cd apps/api && npx prisma generate
 
 # Build the project
-RUN turbo run build --filter=api...
+RUN npx turbo run build --filter=api...
 
 FROM node:20-alpine AS runner
 WORKDIR /app

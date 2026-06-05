@@ -12,7 +12,7 @@ COPY --from=base /app/out/package-lock.json ./package-lock.json
 RUN npm install
 
 COPY --from=base /app/out/full/ .
-RUN turbo run build --filter=web...
+RUN npx turbo run build --filter=web...
 
 FROM node:20-alpine AS runner
 WORKDIR /app
@@ -22,4 +22,5 @@ COPY --from=installer /app .
 WORKDIR /app/apps/web
 EXPOSE 3002
 ENV PORT=3002
-CMD ["npm", "run", "start", "--", "--port", "3002"]
+ENV HOSTNAME=0.0.0.0
+CMD ["node", ".next/standalone/apps/web/server.js"]
