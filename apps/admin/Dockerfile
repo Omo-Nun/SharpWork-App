@@ -20,7 +20,5 @@ WORKDIR /app
 COPY --from=installer /app .
 
 WORKDIR /app/apps/admin
-EXPOSE 3001
-ENV PORT=3001
 ENV HOSTNAME=0.0.0.0
-CMD ["node", ".next/standalone/apps/admin/server.js"]
+CMD ["node", "../../scripts/start-next-app.mjs", "admin"]

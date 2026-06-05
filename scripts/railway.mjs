@@ -32,6 +32,11 @@ function run(npmScript) {
 
 const workspace = resolveWorkspace();
 
+console.log('─'.repeat(60));
+console.log(`[railway] action=${action} service=${process.env.RAILWAY_SERVICE_NAME ?? '(local)'}`);
+console.log(`[railway] workspace=${workspace} PORT=${process.env.PORT ?? '(not set)'} HOSTNAME=${process.env.HOSTNAME ?? '(not set)'}`);
+console.log('─'.repeat(60));
+
 if (action === 'build') {
   run(`build:${workspace}`);
 }
@@ -48,6 +53,19 @@ if (action === 'start') {
       process.exit(setup.status ?? 1);
     }
   }
+  if (workspace === 'web' || workspace === 'admin') {
+    const env = {
+      ...process.env,
+      HOSTNAME: process.env.HOSTNAME || '0.0.0.0',
+    };
+    const result = spawnSync('node', ['scripts/start-next-app.mjs', workspace], {
+      stdio: 'inherit',
+      env,
+      shell: process.platform === 'win32',
+    });
+    process.exit(result.status ?? 1);
+  }
+
   run(`start:${workspace}`);
 }
 
