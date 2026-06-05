@@ -2,7 +2,7 @@
   "ci": {
     "collect": {
       "url": ["http://localhost:3002/"],
-      "startServerCommand": "npm run start -- --port 3002",
+      "startServerCommand": "PORT=3002 HOSTNAME=0.0.0.0 npm run start",
       "startServerReadyPattern": "Ready",
       "startServerReadyTimeout": 60000,
       "numberOfRuns": 1
