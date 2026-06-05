@@ -21,6 +21,7 @@ import {
 } from '../lib/escrow-gating';
 import { getPlatformFeePercent, validateArtisanOffersCategories } from '../lib/platformSettings';
 import { isChatOpenForBooking } from '../lib/chat-gating';
+import { getWebAppUrl } from '../config/env';
 
 type BookingSerializeInput = {
   state: string;
@@ -40,7 +41,6 @@ function serializeBooking<T extends BookingSerializeInput>(booking: T) {
 }
 
 const router = Router();
-const WEB_APP_URL = process.env.WEB_APP_URL || 'http://localhost:3002';
 
 router.get('/', authenticate, requireRole(['CUSTOMER', 'ARTISAN']), async (req: AuthRequest, res: Response): Promise<void> => {
   const user = req.user!;
@@ -467,7 +467,7 @@ router.post('/', authenticate, requireRole(['CUSTOMER']), async (req: AuthReques
     const payment = await initializeTransaction(
       customer!.email,
       quotedPrice,
-      `${WEB_APP_URL}/book/payment/callback`,
+      `${getWebAppUrl(req)}/book/payment/callback`,
       { bookingId: booking.id }
     );
 

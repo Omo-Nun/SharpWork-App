@@ -24,9 +24,9 @@ export async function initializeTransaction(
 
   if (!secretKey) {
     console.log(`[Paystack Dev] Init ₦${amountNaira} for ${email} ref=${reference} (escrow hold)`);
-    const webUrl = process.env.WEB_APP_URL || 'http://localhost:3002';
+    const callbackBase = callbackUrl.replace(/\/book\/payment\/callback\/?$/, '');
     return {
-      authorization_url: `${webUrl}/book/payment/callback?reference=${reference}&dev=1`,
+      authorization_url: `${callbackBase}/book/payment/callback?reference=${reference}&dev=1`,
       access_code: 'dev_access_code',
       reference,
     };

@@ -1,3 +1,14 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
+require('dotenv').config();
+
+if (!process.env.DATABASE_URL) {
+  console.error(
+    'DATABASE_URL is not set. On Railway, open the api service shell (not web/admin) and ensure Postgres is linked under Variables.'
+  );
+  process.exit(1);
+}
+
 const { PrismaClient, Role, VerificationStatus } = require('@prisma/client');
 const bcrypt = require('bcrypt');
 

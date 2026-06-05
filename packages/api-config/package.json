@@ -1,0 +1,21 @@
+{
+  "name": "@repo/api-config",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./urls": "./src/urls.ts",
+    "./proxy": "./src/proxy.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "next": ">=14.0.0"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "*",
+    "@types/node": "^22.15.3",
+    "next": "16.2.0",
+    "typescript": "5.9.2"
+  }
+}

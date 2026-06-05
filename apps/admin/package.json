@@ -9,12 +9,13 @@
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p ${PORT:-3001}",
     "lint": "eslint --max-warnings 0",
     "check-types": "next typegen && tsc --noEmit",
     "test": "echo \"No admin tests configured\" && exit 0"
   },
   "dependencies": {
+    "@repo/api-config": "*",
     "@repo/ui": "*",
     "autoprefixer": "^10.5.0",
     "next": "16.2.0",

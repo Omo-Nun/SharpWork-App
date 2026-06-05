@@ -5,6 +5,7 @@ import { generateTokens, verifyRefreshToken } from '../utils/jwt';
 import { Role } from '@prisma/client';
 import { generateVerificationToken, hashVerificationToken } from '../utils/emailVerification';
 import { sendVerificationEmail } from '../utils/email';
+import { getWebAppUrl } from '../config/env';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { generateOtp } from '../utils/otp';
 import { consumeOtp, isOtpOnCooldown, storeOtp } from '../utils/otpStore';
@@ -109,7 +110,7 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
     }
 
     const verificationToken = await createVerificationTokenForUser(user.id);
-    await sendVerificationEmail(normalizedEmail, verificationToken, firstName);
+    await sendVerificationEmail(normalizedEmail, verificationToken, firstName, getWebAppUrl(req));
 
     res.status(201).json({
       message: 'Account created. Please check your email to verify your address before logging in.',
@@ -205,7 +206,7 @@ router.post('/resend-verification', async (req: Request, res: Response): Promise
     const firstName =
       user.customerProfile?.firstName ?? user.artisanProfile?.firstName ?? 'there';
     const verificationToken = await createVerificationTokenForUser(user.id);
-    await sendVerificationEmail(normalizedEmail, verificationToken, firstName);
+    await sendVerificationEmail(normalizedEmail, verificationToken, firstName, getWebAppUrl(req));
 
     res.status(200).json({
       message: 'If an unverified account exists for this email, a new verification link has been sent.',

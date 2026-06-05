@@ -1,9 +1,12 @@
 import { connectRedis } from './lib/redis';
 import { app, httpServer } from './app';
+import { logZeroConfigWarnings } from './config/env';
 
 const PORT = process.env.PORT || 4000;
 
 async function start() {
+  logZeroConfigWarnings();
+
   try {
     await connectRedis();
     console.log('Redis connected');

@@ -1,0 +1,14 @@
+[
+  {
+    "url": "http://localhost:3002/",
+    "isRepresentativeRun": true,
+    "htmlPath": "/Applications/XAMPP/xamppfiles/htdocs/SharpWork-App/apps/web/.lighthouseci/localhost--2026_06_04_16_18_38.report.html",
+    "jsonPath": "/Applications/XAMPP/xamppfiles/htdocs/SharpWork-App/apps/web/.lighthouseci/localhost--2026_06_04_16_18_38.report.json",
+    "summary": {
+      "performance": 0.98,
+      "accessibility": 0.98,
+      "best-practices": 1,
+      "seo": 1
+    }
+  }
+]

@@ -1,6 +1,7 @@
 import { io, Socket } from 'socket.io-client';
-import { API_BASE_URL } from './api';
 import { getAccessToken } from './auth-storage';
+
+const DIRECT_API = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
 
 let socket: Socket | null = null;
 
@@ -14,7 +15,8 @@ export function connectSocket(): Socket | null {
 
   if (socket?.connected) return socket;
 
-  socket = io(API_BASE_URL, {
+  socket = io(DIRECT_API || undefined, {
+    path: '/socket.io',
     auth: { token },
     transports: ['websocket', 'polling'],
   });

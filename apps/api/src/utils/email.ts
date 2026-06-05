@@ -1,7 +1,7 @@
 import sgMail from '@sendgrid/mail';
+import { getWebAppUrl } from '../config/env';
 
 const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || 'noreply@sharpwork.com';
-const WEB_APP_URL = process.env.WEB_APP_URL || 'http://localhost:3002';
 
 function configureSendGrid(): boolean {
   const apiKey = process.env.SENDGRID_API_KEY;
@@ -10,8 +10,13 @@ function configureSendGrid(): boolean {
   return true;
 }
 
-export async function sendVerificationEmail(to: string, token: string, firstName: string): Promise<void> {
-  const verifyUrl = `${WEB_APP_URL}/auth/verify-email?token=${encodeURIComponent(token)}`;
+export async function sendVerificationEmail(
+  to: string,
+  token: string,
+  firstName: string,
+  webAppUrl?: string
+): Promise<void> {
+  const verifyUrl = `${webAppUrl || getWebAppUrl()}/auth/verify-email?token=${encodeURIComponent(token)}`;
   const subject = 'Verify your SharpWork email';
   const html = `
     <div style="font-family: Poppins, Arial, sans-serif; max-width: 560px; margin: 0 auto;">

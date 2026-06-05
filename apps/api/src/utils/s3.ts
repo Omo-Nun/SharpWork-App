@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
+import { getApiPublicUrl } from '../config/env';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -23,8 +24,7 @@ async function uploadToLocal(userId: string, buffer: Buffer, contentType: string
   const filePath = path.join(dir, key);
   await fs.writeFile(filePath, buffer);
 
-  const baseUrl = process.env.API_PUBLIC_URL || `http://localhost:${process.env.PORT || 4000}`;
-  return { key, url: `${baseUrl}/uploads/${userId}/${key}` };
+  return { key, url: `${getApiPublicUrl()}/uploads/${userId}/${key}` };
 }
 
 async function uploadToS3(userId: string, buffer: Buffer, contentType: string): Promise<UploadResult> {
