@@ -84,6 +84,14 @@ export function isProduction(): boolean {
 }
 
 export function logZeroConfigWarnings(): void {
+  const redisUrl = process.env.REDIS_URL?.trim();
+  if (redisUrl && !isRedisConfigured()) {
+    console.warn(
+      `[config] REDIS_URL="${redisUrl}" looks like a placeholder — Redis is disabled. ` +
+        'Delete REDIS_URL on the Railway api service (Variables tab).'
+    );
+  }
+
   if (process.env.JWT_ACCESS_SECRET && process.env.JWT_REFRESH_SECRET) return;
 
   console.warn(

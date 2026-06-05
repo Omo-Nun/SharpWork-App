@@ -14,7 +14,7 @@ import moderationRouter from './routes/moderation';
 import webhooksRouter from './routes/webhooks';
 import { initSocketIO } from './socket';
 import prisma from './prisma';
-import { pingRedis } from './lib/redis';
+import { pingRedis, isRedisEnabled } from './lib/redis';
 import { initSentry, Sentry } from './lib/sentry';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 
@@ -51,13 +51,16 @@ app.get('/health', async (_req, res) => {
     dbOk = false;
   }
 
-  redisOk = await pingRedis();
+  redisOk = isRedisEnabled() ? await pingRedis() : false;
 
-  const ok = dbOk && redisOk;
+  const ok = dbOk;
+  const redisRequired = isRedisEnabled();
+  const status = !dbOk ? 'error' : redisRequired && !redisOk ? 'degraded' : 'ok';
+
   res.status(ok ? 200 : 503).json({
-    status: ok ? 'ok' : 'degraded',
+    status,
     service: 'SharpWork API',
-    checks: { database: dbOk, redis: redisOk },
+    checks: { database: dbOk, redis: redisOk, redisConfigured: redisRequired },
   });
 });
 
