@@ -13,6 +13,10 @@ export function rateLimit(keyPrefix: string, maxRequests: number, windowSeconds:
 
     try {
       const redis = getRedis();
+      if (!redis) {
+        next();
+        return;
+      }
       if (redis.status !== 'ready') await redis.connect();
 
       const count = await redis.incr(key);

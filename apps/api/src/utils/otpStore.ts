@@ -20,6 +20,7 @@ function hashOtp(otp: string): string {
 
 export async function isOtpOnCooldown(purpose: OtpPurpose, phoneNumber: string): Promise<boolean> {
   const redis = getRedis();
+  if (!redis) return false;
   const exists = await redis.exists(cooldownKey(purpose, phoneNumber));
   return exists === 1;
 }
@@ -31,6 +32,7 @@ export async function storeOtp(
   userId: string
 ): Promise<void> {
   const redis = getRedis();
+  if (!redis) return;
   const payload = JSON.stringify({ userId, otpHash: hashOtp(otp) });
 
   await redis
@@ -46,6 +48,7 @@ export async function consumeOtp(
   otp: string
 ): Promise<{ userId: string } | null> {
   const redis = getRedis();
+  if (!redis) return null;
   const key = otpKey(purpose, phoneNumber);
   const raw = await redis.get(key);
 

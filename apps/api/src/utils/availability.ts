@@ -8,6 +8,7 @@ export function artisanOnlineKey(userId: string): string {
 
 export async function setArtisanOnline(userId: string, isOnline: boolean): Promise<void> {
   const redis = getRedis();
+  if (!redis) return;
   const key = artisanOnlineKey(userId);
 
   if (isOnline) {
@@ -19,12 +20,14 @@ export async function setArtisanOnline(userId: string, isOnline: boolean): Promi
 
 export async function getArtisanOnline(userId: string): Promise<boolean> {
   const redis = getRedis();
+  if (!redis) return false;
   const value = await redis.get(artisanOnlineKey(userId));
   return value === '1';
 }
 
 export async function getOnlineArtisanIds(): Promise<string[]> {
   const redis = getRedis();
+  if (!redis) return [];
   const keys = await redis.keys(`${ONLINE_KEY_PREFIX}*`);
   return keys.map((key) => key.replace(ONLINE_KEY_PREFIX, ''));
 }

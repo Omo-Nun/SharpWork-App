@@ -60,8 +60,23 @@ export function getWebAppUrl(req?: Pick<Request, 'headers'>): string {
   return 'http://localhost:3002';
 }
 
-export function getRedisUrl(): string {
-  return process.env.REDIS_URL || 'redis://localhost:6379';
+const PLACEHOLDER_REDIS_HOST =
+  /your-elasticache-host|your-redis-host|example\.com|changeme|placeholder/i;
+
+/** True when REDIS_URL points at a real broker (not docs placeholders or localhost on Railway). */
+export function isRedisConfigured(): boolean {
+  const url = process.env.REDIS_URL?.trim();
+  if (!url) return false;
+  if (PLACEHOLDER_REDIS_HOST.test(url)) return false;
+  if (process.env.RAILWAY_ENVIRONMENT && /localhost|127\.0\.0\.1/.test(url)) {
+    return false;
+  }
+  return true;
+}
+
+export function getRedisUrl(): string | null {
+  if (!isRedisConfigured()) return null;
+  return process.env.REDIS_URL!.trim();
 }
 
 export function isProduction(): boolean {
