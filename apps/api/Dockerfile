@@ -10,19 +10,17 @@ RUN turbo prune api --docker
 
 FROM node:20-alpine AS installer
 WORKDIR /app
+RUN apk add --no-cache openssl
 COPY --from=base /app/out/json/ .
 COPY --from=base /app/out/package-lock.json ./package-lock.json
 RUN npm install
 
 COPY --from=base /app/out/full/ .
-# Generate Prisma Client
-RUN cd apps/api && npx prisma generate
-
-# Build the project
 RUN npx turbo run build --filter=api...
 
 FROM node:20-alpine AS runner
 WORKDIR /app
+RUN apk add --no-cache openssl
 
 COPY --from=installer /app .
 
