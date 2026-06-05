@@ -21,4 +21,5 @@ restartPolicyMaxRetries = 10
 
 [environments.production.variables]
 NODE_ENV = "production"
-# Web proxies /backend → api.railway.internal:4000 (no NEXT_PUBLIC_API_URL needed)
+HOSTNAME = "0.0.0.0"
+PORT = "3002"

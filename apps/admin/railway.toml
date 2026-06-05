@@ -21,3 +21,5 @@ restartPolicyMaxRetries = 10
 
 [environments.production.variables]
 NODE_ENV = "production"
+HOSTNAME = "0.0.0.0"
+PORT = "3001"
