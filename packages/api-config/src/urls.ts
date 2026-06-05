@@ -34,6 +34,11 @@ export function resolveApiUrl(): string {
     return `http://localhost:${DEFAULT_API_PORT}`;
   }
 
+  // Railway private DNS routes to the service port automatically.
+  if (host.endsWith('.railway.internal')) {
+    return `http://${host}`;
+  }
+
   return `http://${host}:${DEFAULT_API_PORT}`;
 }
 
