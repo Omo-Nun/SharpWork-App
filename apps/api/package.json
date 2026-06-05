@@ -12,9 +12,9 @@
     "start": "node dist/index.js",
     "start:prod": "node dist/index.js",
     "lint": "eslint src/**/*.ts",
-    "test": "jest --runInBand",
-    "test:coverage": "jest --runInBand --coverage",
-    "test:integration": "jest --runInBand integration.test.ts security-audit.test.ts",
+    "test": "prisma generate && jest --runInBand",
+    "test:coverage": "prisma generate && jest --runInBand --coverage",
+    "test:integration": "prisma generate && jest --runInBand integration.test.ts security-audit.test.ts",
     "seed": "prisma db seed",
     "migrate:deploy": "prisma migrate deploy",
     "db:setup": "prisma migrate deploy && prisma db seed"

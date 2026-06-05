@@ -54,8 +54,8 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Run Database Migrations
-        run: cd apps/api && npx prisma migrate deploy
+      - name: Generate Prisma Client & Run Migrations
+        run: cd apps/api && npx prisma generate && npx prisma migrate deploy
 
       - name: Type Check & Lint
         run: npx turbo run check-types lint
