@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { apiDelete, ApiError } from '../../lib/api';
 import { getAccessToken } from '../../lib/auth-storage';
 import { useAuth } from '../../context/AuthContext';

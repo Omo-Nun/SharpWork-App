@@ -13,7 +13,8 @@ const DEFAULT_LNG = 3.3792;
 function SearchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialCategories = searchParams.get('categories')?.split(',').filter(Boolean) || [];
+  const initialCategoriesKey = searchParams.get('categories') ?? '';
+  const initialCategories = initialCategoriesKey.split(',').filter(Boolean);
 
   const [radiusKm, setRadiusKm] = useState(10);
   const [query, setQuery] = useState('');
@@ -36,7 +37,7 @@ function SearchContent() {
 
   useEffect(() => {
     setSelectedCategories(initialCategories);
-  }, [searchParams]);
+  }, [initialCategoriesKey, initialCategories]);
 
   const { data: artisans = [], isLoading, error } = useQuery({
     queryKey: ['search', coords.lat, coords.lng, radiusKm, selectedCategories.join(','), query],

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { use, useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
@@ -64,10 +65,13 @@ export default function ArtisanProfilePage({ params }: { params: Promise<{ artis
         <div className="px-6 py-4 sm:flex sm:items-center sm:justify-between relative">
           <div className="sm:flex sm:space-x-5">
             <div className="flex-shrink-0 -mt-16 relative">
-              <img
+              <Image
                 className="mx-auto h-24 w-24 rounded-full border-4 border-white shadow-md object-cover"
                 src={`https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=0D2B5E&color=fff`}
                 alt={displayName}
+                width={96}
+                height={96}
+                unoptimized
               />
             </div>
             <div className="mt-4 text-center sm:mt-0 sm:pt-1 sm:text-left">
@@ -115,7 +119,15 @@ export default function ArtisanProfilePage({ params }: { params: Promise<{ artis
               <h2 className="text-lg font-bold text-gray-900 mb-4">Portfolio</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {profile.portfolioUrls.map((url) => (
-                  <img key={url} src={url} alt="Portfolio" className="h-32 w-full object-cover rounded-lg bg-gray-200" />
+                  <Image
+                    key={url}
+                    src={url}
+                    alt="Portfolio"
+                    width={320}
+                    height={128}
+                    unoptimized
+                    className="h-32 w-full object-cover rounded-lg bg-gray-200"
+                  />
                 ))}
               </div>
             </div>

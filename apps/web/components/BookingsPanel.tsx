@@ -44,7 +44,6 @@ function customerName(booking: BookingRecord) {
 }
 
 function DisputeModal({
-  bookingId,
   onClose,
   onSubmit,
 }: {
@@ -87,7 +86,6 @@ function DisputeModal({
 }
 
 function ReviewModal({
-  bookingId,
   onClose,
   onSubmit,
 }: {

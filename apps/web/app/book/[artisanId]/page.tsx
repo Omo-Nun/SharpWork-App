@@ -14,7 +14,8 @@ function BookingWizardContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const artisanIdParam = params.artisanId as string;
-  const urlCategories = searchParams.get('categories')?.split(',').filter(Boolean) || [];
+  const urlCategoriesKey = searchParams.get('categories') ?? '';
+  const urlCategories = urlCategoriesKey.split(',').filter(Boolean);
 
   const {
     step,
@@ -58,7 +59,7 @@ function BookingWizardContent() {
     } else if (urlCategories.length > 0 && urlCategories.join(',') !== categorySlugs.join(',')) {
       updateBooking({ categorySlugs: urlCategories });
     }
-  }, [artisanIdParam, urlCategories.join(','), artisanId, categorySlugs, resetBooking, updateBooking]);
+  }, [artisanIdParam, urlCategoriesKey, artisanId, categorySlugs, resetBooking, updateBooking, urlCategories]);
 
   const categoryLabels = categorySlugs
     .map((slug) => allCategories.find((c) => c.slug === slug)?.name || slug)

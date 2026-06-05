@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { apiPost, apiGet, apiPatch } from '../../lib/api';
 import { getAccessToken } from '../../lib/auth-storage';
@@ -85,7 +86,14 @@ export default function AdminSettings() {
           <div className="space-y-4">
             <div className="bg-gray-50 p-4 rounded-lg border text-center">
               {totpSetup.qrCode ? (
-                <img src={totpSetup.qrCode} alt="TOTP QR Code" className="mx-auto w-48 h-48" />
+                <Image
+                  src={totpSetup.qrCode}
+                  alt="TOTP QR Code"
+                  width={192}
+                  height={192}
+                  unoptimized
+                  className="mx-auto w-48 h-48"
+                />
               ) : null}
               <p className="text-xs text-gray-500 mt-2 font-mono break-all">Secret: {totpSetup.secret}</p>
             </div>

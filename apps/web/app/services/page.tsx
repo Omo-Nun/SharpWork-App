@@ -9,13 +9,14 @@ import { fetchServiceCategories, type ServiceCategory } from '../../lib/marketpl
 function ServicesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const preselected = searchParams.get('categories')?.split(',').filter(Boolean) || [];
+  const preselectedKey = searchParams.get('categories') ?? '';
+  const preselected = preselectedKey.split(',').filter(Boolean);
 
   const [selected, setSelected] = useState<string[]>(preselected);
 
   useEffect(() => {
     if (preselected.length) setSelected(preselected);
-  }, [searchParams]);
+  }, [preselectedKey, preselected]);
 
   const { data: categories = [], isLoading } = useQuery({
     queryKey: ['categories'],
