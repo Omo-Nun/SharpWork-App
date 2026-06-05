@@ -1,3 +1,4 @@
+import './config/bootstrap';
 import express from 'express';
 import path from 'path';
 import { createServer } from 'http';

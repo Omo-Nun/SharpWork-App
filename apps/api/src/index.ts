@@ -1,3 +1,4 @@
+import './config/bootstrap';
 import { connectRedis, isRedisEnabled } from './lib/redis';
 import { app, httpServer } from './app';
 import { logZeroConfigWarnings } from './config/env';

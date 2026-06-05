@@ -1,7 +1,9 @@
 import Redis from 'ioredis';
 import { getRedisUrl, isRedisConfigured } from '../config/env';
 
-let redis: Redis | null = null;
+type RedisClient = Redis;
+
+let redis: RedisClient | null = null;
 let warnedDisabled = false;
 
 function logRedisDisabled(): void {
@@ -17,7 +19,7 @@ export function isRedisEnabled(): boolean {
   return isRedisConfigured();
 }
 
-export function getRedis(): Redis | null {
+export function getRedis(): RedisClient | null {
   if (!isRedisConfigured()) {
     logRedisDisabled();
     return null;
@@ -30,6 +32,8 @@ export function getRedis(): Redis | null {
       lazyConnect: true,
       enableOfflineQueue: false,
       retryStrategy: () => null,
+      autoResubscribe: false,
+      autoResendUnfulfilledCommands: false,
     });
     redis.on('error', (err) => {
       console.warn('[redis]', err.message);

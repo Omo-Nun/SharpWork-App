@@ -61,16 +61,32 @@ export function getWebAppUrl(req?: Pick<Request, 'headers'>): string {
 }
 
 const PLACEHOLDER_REDIS_HOST =
-  /your-elasticache-host|your-redis-host|example\.com|changeme|placeholder/i;
+  /your-elasticache-host|your-redis-host|elasticache-host|example\.com|changeme|placeholder/i;
+
+function shouldIgnoreRedisUrl(url: string): boolean {
+  if (PLACEHOLDER_REDIS_HOST.test(url)) return true;
+  if (process.env.RAILWAY_ENVIRONMENT && /localhost|127\.0\.0\.1/.test(url)) {
+    return true;
+  }
+  return false;
+}
+
+/** Drop placeholder REDIS_URL before ioredis can read it (Railway Variables tab). */
+export function sanitizeRedisEnv(): void {
+  const url = process.env.REDIS_URL?.trim();
+  if (!url || !shouldIgnoreRedisUrl(url)) return;
+
+  console.warn(
+    `[config] Ignoring invalid REDIS_URL="${url}". Delete REDIS_URL on the Railway api service.`
+  );
+  delete process.env.REDIS_URL;
+}
 
 /** True when REDIS_URL points at a real broker (not docs placeholders or localhost on Railway). */
 export function isRedisConfigured(): boolean {
   const url = process.env.REDIS_URL?.trim();
   if (!url) return false;
-  if (PLACEHOLDER_REDIS_HOST.test(url)) return false;
-  if (process.env.RAILWAY_ENVIRONMENT && /localhost|127\.0\.0\.1/.test(url)) {
-    return false;
-  }
+  if (shouldIgnoreRedisUrl(url)) return false;
   return true;
 }
 
