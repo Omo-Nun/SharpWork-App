@@ -68,6 +68,43 @@ export async function getReviewStatsForArtisans(artisanUserIds: string[]) {
   );
 }
 
+export async function getRatingDistribution(artisanUserId: string) {
+  const grouped = await prisma.review.groupBy({
+    by: ['rating'],
+    where: { artisanId: artisanUserId },
+    _count: { rating: true },
+  });
+
+  const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  for (const group of grouped) {
+    if (group.rating >= 1 && group.rating <= 5) {
+      distribution[group.rating as keyof typeof distribution] = group._count.rating;
+    }
+  }
+
+  return distribution;
+}
+
+export async function getCompletedJobsCountForArtisans(artisanUserIds: string[]) {
+  if (artisanUserIds.length === 0) return new Map<string, number>();
+
+  const grouped = await prisma.booking.groupBy({
+    by: ['artisanId'],
+    where: { 
+      artisanId: { in: artisanUserIds },
+      state: { in: ['COMPLETED', 'REVIEWED'] }
+    },
+    _count: { id: true },
+  });
+
+  return new Map(
+    grouped.map((g) => [
+      g.artisanId,
+      g._count.id,
+    ])
+  );
+}
+
 export async function getCategoriesForArtisanProfiles(profileIds: string[]) {
   if (profileIds.length === 0) return new Map<string, Array<{ id: string; name: string; slug: string; icon: string | null }>>();
 

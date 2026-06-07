@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { RequireCustomerAuth } from '../../../components/RequireCustomerAuth';
 import { useBookingStore } from '../../../store/useBookingStore';
 import { createBooking, fetchPublicArtisanProfile, fetchServiceCategories } from '../../../lib/marketplace';
-import { ApiError } from '../../../lib/api';
+import { ApiError, apiPost } from '../../../lib/api';
 
 function BookingWizardContent() {
   const params = useParams();
@@ -30,11 +30,16 @@ function BookingWizardContent() {
     scheduledTime,
     location,
     priceEstimate,
+    isDraft,
+    lastSavedAt,
   } = useBookingStore();
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
+  const [resendingEmail, setResendingEmail] = useState(false);
+  const [emailResent, setEmailResent] = useState(false);
 
   const { data: artisan } = useQuery({
     queryKey: ['artisan-public', artisanIdParam],
@@ -97,6 +102,20 @@ function BookingWizardContent() {
       return;
     }
 
+    if (step === 2) {
+      if (!scheduledDate) {
+        setError('Please select a scheduled date.');
+        return;
+      }
+      const selected = new Date(scheduledDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selected < today) {
+        setError('Scheduled date cannot be in the past.');
+        return;
+      }
+    }
+
     if (step === 3 && !location.address.trim()) {
       setError('Please enter your service address.');
       return;
@@ -125,13 +144,31 @@ function BookingWizardContent() {
         window.location.href = result.payment.authorization_url;
         return;
       } catch (err) {
-        setError(err instanceof ApiError ? err.message : 'Booking failed');
+        if (err instanceof ApiError && err.code === 'EMAIL_NOT_VERIFIED') {
+          setUnverifiedEmail(err.data?.email as string || '');
+          setError('');
+        } else {
+          setError(err instanceof ApiError ? err.message : 'Booking failed');
+        }
         setLoading(false);
         return;
       }
     }
 
     nextStep();
+  }
+
+  async function handleResendVerification() {
+    if (!unverifiedEmail) return;
+    setResendingEmail(true);
+    try {
+      await apiPost('/auth/resend-verification', { email: unverifiedEmail });
+      setEmailResent(true);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to resend verification email');
+    } finally {
+      setResendingEmail(false);
+    }
   }
 
   const renderStep = () => {
@@ -151,13 +188,15 @@ function BookingWizardContent() {
               </div>
             )}
             <textarea
-              className="w-full p-5 border-2 border-gray-100 rounded-2xl outline-none focus:border-brand-green bg-gray-50/50 resize-none text-lg"
+              className={`w-full p-5 border-2 ${serviceDetails.length > 0 && serviceDetails.length < 20 ? 'border-red-300' : 'border-gray-100'} rounded-2xl outline-none focus:border-brand-green bg-gray-50/50 resize-none text-lg`}
               placeholder="E.g., The kitchen sink pipe is leaking and needs replacement..."
               rows={5}
               value={serviceDetails}
               onChange={(e) => updateBooking({ serviceDetails: e.target.value })}
-            />
-          </div>
+              <div className="flex justify-between text-xs text-gray-500 mt-2 px-1">
+                <span>{serviceDetails.length} / 20 min characters</span>
+              </div>
+            </div>
         );
       case 2:
         return (
@@ -245,7 +284,14 @@ function BookingWizardContent() {
     <div className="min-h-screen bg-gray-50 py-12 px-4">
       <div className="max-w-3xl mx-auto mb-8 flex justify-between items-center">
         <Link href="/" className="text-2xl font-black text-brand-navy">Sharp<span className="text-brand-green">Work</span></Link>
-        <Link href="/search" className="text-sm font-bold text-gray-500">Cancel</Link>
+        <div className="flex items-center gap-4">
+          {isDraft && lastSavedAt && (
+            <span className="text-xs text-gray-400">
+              Draft saved at {new Date(lastSavedAt).toLocaleTimeString()} ✓
+            </span>
+          )}
+          <Link href="/search" className="text-sm font-bold text-gray-500 hover:text-gray-900">Cancel</Link>
+        </div>
       </div>
 
       {artisan && step < 5 && (
@@ -266,6 +312,22 @@ function BookingWizardContent() {
             ))}
           </div>
         )}
+        
+        {unverifiedEmail && (
+          <div className="mb-6 p-6 rounded-2xl border border-orange-200 bg-orange-50 text-orange-800">
+            <h3 className="font-bold text-lg mb-2">Email Verification Required</h3>
+            <p className="mb-4">Please verify your email address to continue booking. Check your inbox for the verification link.</p>
+            <button
+              type="button"
+              onClick={handleResendVerification}
+              disabled={resendingEmail || emailResent}
+              className="bg-orange-600 text-white px-6 py-2 rounded-xl font-bold text-sm disabled:opacity-50"
+            >
+              {resendingEmail ? 'Sending...' : emailResent ? 'Verification Sent ✓' : 'Resend Verification Email'}
+            </button>
+          </div>
+        )}
+
         {error && <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
         {renderStep()}
 

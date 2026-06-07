@@ -22,6 +22,7 @@ import {
 import { getPlatformFeePercent, validateArtisanOffersCategories } from '../lib/platformSettings';
 import { isChatOpenForBooking } from '../lib/chat-gating';
 import { getWebAppUrl } from '../config/env';
+import { requireEmailVerified } from '../middleware/requireEmailVerified';
 
 type BookingSerializeInput = {
   state: string;
@@ -389,7 +390,7 @@ router.get('/:id/escrow-audit', authenticate, requireRole(['CUSTOMER', 'ARTISAN'
   }
 });
 
-router.post('/', authenticate, requireRole(['CUSTOMER']), async (req: AuthRequest, res: Response): Promise<void> => {
+router.post('/', authenticate, requireRole(['CUSTOMER']), requireEmailVerified, async (req: AuthRequest, res: Response): Promise<void> => {
   const {
     artisanId,
     description,
@@ -588,6 +589,12 @@ router.patch('/:id/state', authenticate, requireRole(['CUSTOMER', 'ARTISAN']), v
     }
 
     if (state === BookingState.REVIEWED) {
+      const dbUser = await prisma.user.findUnique({ where: { id: user.userId }, select: { emailVerifiedAt: true, email: true }});
+      if (!dbUser?.emailVerifiedAt) {
+        res.status(403).json({ error: 'Please verify your email before leaving a review.', code: 'EMAIL_NOT_VERIFIED', email: dbUser?.email });
+        return;
+      }
+
       const reviewRating = Number(rating);
       if (!Number.isInteger(reviewRating) || reviewRating < 1 || reviewRating > 5) {
         res.status(400).json({ error: 'A rating between 1 and 5 is required to leave a review' });

@@ -87,6 +87,16 @@ export default function ArtisanProfilePage({ params }: { params: Promise<{ artis
                   ★ {profile.averageRating} ({profile.reviewCount} reviews)
                 </span>
               </div>
+              <div className="mt-2 flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                {['identity', 'skills', 'background', 'references'].map(badge => {
+                  const hasBadge = profile.verificationBadges?.includes(badge);
+                  return (
+                    <span key={badge} className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${hasBadge ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-gray-50 text-gray-500 border border-gray-200 opacity-60'}`}>
+                      {hasBadge ? '✓ ' : '⏳ '}{badge.charAt(0).toUpperCase() + badge.slice(1)}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
           </div>
           <div className="mt-5 flex justify-center sm:mt-0 gap-3">
@@ -138,10 +148,20 @@ export default function ArtisanProfilePage({ params }: { params: Promise<{ artis
               <h2 className="text-lg font-bold text-gray-900 mb-4">Recent Reviews</h2>
               <div className="space-y-4">
                 {profile.reviews.map((review, i) => (
-                  <div key={i} className="border-b pb-3 last:border-0">
-                    <p className="text-yellow-500 text-sm">{'★'.repeat(review.rating)}</p>
-                    {review.comment && <p className="text-gray-600 text-sm mt-1">{review.comment}</p>}
-                    <p className="text-xs text-gray-400 mt-1">{new Date(review.createdAt).toLocaleDateString()}</p>
+                  <div key={i} className="border-b pb-4 mb-4 last:border-0 last:pb-0 last:mb-0">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-500 text-xs">
+                        {review.reviewerName?.charAt(0).toUpperCase() || 'A'}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900 text-sm">{review.reviewerName || 'Anonymous'}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-yellow-500 text-xs tracking-wider">{'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}</p>
+                          <p className="text-xs text-gray-400">• {new Date(review.createdAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    </div>
+                    {review.comment && <p className="text-gray-600 text-sm">{review.comment}</p>}
                   </div>
                 ))}
               </div>
@@ -153,6 +173,18 @@ export default function ArtisanProfilePage({ params }: { params: Promise<{ artis
           <h2 className="text-lg font-bold text-gray-900 mb-4">Details</h2>
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between">
+              <dt className="text-gray-500">Member Since</dt>
+              <dd className="font-medium text-gray-900">{profile.memberSince ? new Date(profile.memberSince).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : 'Unknown'}</dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-gray-500">Completed Jobs</dt>
+              <dd className="font-medium text-gray-900">{profile.completedJobsCount || 0}</dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-gray-500">Response Time</dt>
+              <dd className="font-medium text-gray-900">~{profile.responseTimeMinutes || 15} min</dd>
+            </div>
+            <div className="flex justify-between">
               <dt className="text-gray-500">Reviews</dt>
               <dd className="font-medium text-gray-900">{profile.reviewCount}</dd>
             </div>
@@ -161,6 +193,25 @@ export default function ArtisanProfilePage({ params }: { params: Promise<{ artis
               <dd className="font-medium text-gray-900">{profile.averageRating} / 5</dd>
             </div>
           </dl>
+
+          <div className="mt-6">
+            <h3 className="text-sm font-bold text-gray-900 mb-2">Rating Distribution</h3>
+            <div className="space-y-2">
+              {[5, 4, 3, 2, 1].map(stars => {
+                const count = profile.ratingDistribution?.[stars.toString()] || 0;
+                const percent = profile.reviewCount > 0 ? (count / profile.reviewCount) * 100 : 0;
+                return (
+                  <div key={stars} className="flex items-center text-sm">
+                    <span className="w-8 text-gray-500">{stars} ★</span>
+                    <div className="flex-1 ml-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-yellow-400" style={{ width: `${percent}%` }} />
+                    </div>
+                    <span className="w-8 text-right text-gray-500 text-xs">{count}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
 
