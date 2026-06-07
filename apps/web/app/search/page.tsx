@@ -37,8 +37,8 @@ function SearchContent() {
   }, []);
 
   useEffect(() => {
-    setSelectedCategories(initialCategories);
-  }, [initialCategoriesKey, initialCategories]);
+    setSelectedCategories(initialCategoriesKey.split(',').filter(Boolean));
+  }, [initialCategoriesKey]);
 
   const { data: artisans = [], isLoading, error } = useQuery({
     queryKey: ['search', coords.lat, coords.lng, radiusKm, selectedCategories.join(','), query, sortBy],
