@@ -137,6 +137,7 @@ export function CustomerBookingsPanel() {
   const [reviewBookingId, setReviewBookingId] = useState<string | null>(null);
   const [disputeBookingId, setDisputeBookingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState('');
+  const [activeTab, setActiveTab] = useState<'UPCOMING' | 'ACTIVE' | 'COMPLETED' | 'DISPUTED'>('ACTIVE');
 
   const { data: bookings = [], isLoading } = useQuery({
     queryKey: ['bookings', 'mine'],
@@ -222,16 +223,43 @@ export function CustomerBookingsPanel() {
         <Link href="/search" className="text-brand-green font-bold hover:underline">Find artisan →</Link>
       </div>
 
+      <div className="flex overflow-x-auto gap-2 mb-6 pb-2 scrollbar-hide">
+        {(['UPCOMING', 'ACTIVE', 'COMPLETED', 'DISPUTED'] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${
+              activeTab === tab
+                ? 'bg-[#0D2B5E] text-white shadow-md'
+                : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            {tab.charAt(0) + tab.slice(1).toLowerCase()} Jobs
+          </button>
+        ))}
+      </div>
+
       {isLoading && <p className="text-gray-500">Loading bookings...</p>}
 
-      {!isLoading && bookings.length === 0 && (
-        <div className="bg-white p-8 rounded-2xl border text-center text-gray-500 mb-12">
-          No bookings yet. <Link href="/search" className="text-brand-green font-bold">Find an artisan</Link>
-        </div>
-      )}
+      {(() => {
+        const filteredBookings = bookings.filter((b) => {
+          if (activeTab === 'UPCOMING') return ['PENDING', 'ACCEPTED'].includes(b.state);
+          if (activeTab === 'ACTIVE') return b.state === 'IN_PROGRESS';
+          if (activeTab === 'COMPLETED') return ['COMPLETED', 'REVIEWED'].includes(b.state);
+          if (activeTab === 'DISPUTED') return b.state === 'DISPUTED';
+          return true;
+        });
 
-      <div className="space-y-4 mb-12">
-        {bookings.map((booking) => (
+        return (
+          <>
+            {!isLoading && filteredBookings.length === 0 && (
+              <div className="bg-white p-8 rounded-2xl border text-center text-gray-500 mb-12 shadow-sm">
+                No {activeTab.toLowerCase()} bookings found. <Link href="/search" className="text-brand-green font-bold hover:underline">Find an artisan</Link>
+              </div>
+            )}
+
+            <div className="space-y-4 mb-12">
+              {filteredBookings.map((booking) => (
           <div key={booking.id} className="bg-white rounded-3xl border border-gray-100 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h3 className="font-bold text-lg text-brand-navy">{booking.description.slice(0, 60)}...</h3>
@@ -298,6 +326,9 @@ export function CustomerBookingsPanel() {
           </div>
         ))}
       </div>
+          </>
+        );
+      })()}
     </>
   );
 }

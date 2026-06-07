@@ -23,6 +23,34 @@ interface LocationUpdate {
   timestamp: string;
 }
 
+const STEPS = [
+  { id: 'ACCEPTED', label: 'Accepted' },
+  { id: 'IN_PROGRESS', label: 'In Progress' },
+  { id: 'COMPLETED', label: 'Completed' },
+  { id: 'REVIEWED', label: 'Reviewed' }
+];
+
+function JobTimeline({ currentState }: { currentState: string }) {
+  const currentIndex = STEPS.findIndex(s => s.id === currentState);
+  const activeIndex = currentIndex === -1 ? (currentState === 'PENDING' ? -1 : 0) : currentIndex;
+  
+  return (
+    <div className="flex items-center w-full max-w-3xl mx-auto py-6 px-4 bg-white border-b shadow-sm relative z-20">
+      {STEPS.map((step, idx) => (
+        <div key={step.id} className="flex-1 flex flex-col items-center relative">
+          {idx !== 0 && (
+            <div className={`absolute top-4 left-[-50%] right-[50%] h-1 ${idx <= activeIndex ? 'bg-[#007A52]' : 'bg-gray-200'}`} />
+          )}
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center z-10 border-2 font-bold text-sm transition-colors ${idx < activeIndex ? 'bg-[#007A52] border-[#007A52] text-white' : idx === activeIndex ? 'bg-white border-[#007A52] text-[#007A52] ring-4 ring-[#007A52]/20' : 'bg-white border-gray-300 text-gray-300'}`}>
+            {idx < activeIndex ? '✓' : idx + 1}
+          </div>
+          <span className={`mt-3 text-xs font-bold ${idx <= activeIndex ? 'text-gray-900' : 'text-gray-400'}`}>{step.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function JobTrackingPage({ params }: { params: Promise<{ jobId: string }> }) {
   const { jobId } = use(params);
   const router = useRouter();
@@ -173,14 +201,13 @@ export default function JobTrackingPage({ params }: { params: Promise<{ jobId: s
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-[#007A52]" />
               </span>
-              <span className="text-sm font-medium text-gray-700">Live • {bookingState}</span>
+              <span className="text-sm font-bold text-[#007A52] bg-green-50 px-3 py-1 rounded-full border border-green-100">Live • Tracking</span>
             </>
-          )}
-          {bookingState !== 'IN_PROGRESS' && (
-            <span className="text-sm font-medium text-gray-700 uppercase">{bookingState}</span>
           )}
         </div>
       </div>
+
+      <JobTimeline currentState={bookingState} />
 
       <div className="flex-1 relative bg-gray-200">
         {bookingState === 'IN_PROGRESS' && coords ? (
@@ -219,18 +246,23 @@ export default function JobTrackingPage({ params }: { params: Promise<{ jobId: s
         )}
 
         {showChat && chatOpen && (
-          <div className="mb-4 border rounded-xl p-3 max-h-40 overflow-y-auto bg-gray-50">
+          <div className="mb-4 border rounded-xl p-4 h-64 overflow-y-auto bg-gray-50 flex flex-col gap-3 scrollbar-hide shadow-inner">
             {messages.length === 0 ? (
-              <p className="text-sm text-gray-400">No messages yet. Say hello to coordinate the job.</p>
+              <p className="text-sm text-gray-400 text-center m-auto">No messages yet. Say hello to coordinate the job.</p>
             ) : (
-              messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`text-sm mb-2 ${msg.senderId === user.id ? 'text-right text-brand-navy' : 'text-left text-gray-600'}`}
-                >
-                  {msg.content}
-                </div>
-              ))
+              messages.map((msg) => {
+                const isMe = msg.senderId === user.id;
+                return (
+                  <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                    <div className={`px-4 py-2.5 max-w-[85%] text-sm shadow-sm ${isMe ? 'bg-[#0D2B5E] text-white rounded-2xl rounded-br-sm' : 'bg-white border text-gray-800 rounded-2xl rounded-bl-sm'}`}>
+                      {msg.content}
+                    </div>
+                    <span className="text-[10px] text-gray-400 mt-1 mx-1 font-medium">
+                      {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                );
+              })
             )}
           </div>
         )}

@@ -78,37 +78,44 @@ export default function ArtisanDashboard() {
           <DashboardWelcome subtitle="Manage your jobs, track earnings, and update your availability." />
           <button
             onClick={toggleAvailability}
-            className="flex items-center space-x-3 bg-white px-4 py-2 rounded-full border border-gray-200 shadow-sm hover:shadow-md transition-shadow self-start md:self-auto"
+            className={`flex items-center space-x-3 px-5 py-3 rounded-full border shadow-sm hover:shadow-md transition-all self-start md:self-auto ${isOnline ? 'bg-white border-brand-green/30' : 'bg-gray-50 border-gray-200'}`}
           >
-            <span className={`text-sm font-bold ${isOnline ? 'text-brand-green' : 'text-gray-400'}`}>
-              {isOnline ? 'Online' : 'Offline'}
+            {isOnline && (
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-green opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-brand-green"></span>
+              </span>
+            )}
+            <span className={`text-sm font-bold ${isOnline ? 'text-brand-green' : 'text-gray-500'}`}>
+              {isOnline ? 'Accepting Requests' : 'Currently Offline'}
             </span>
-            <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isOnline ? 'bg-brand-green' : 'bg-gray-300'}`}>
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${isOnline ? 'translate-x-6' : 'translate-x-1'}`} />
+            <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 ${isOnline ? 'bg-brand-green' : 'bg-gray-300'}`}>
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 shadow-sm ${isOnline ? 'translate-x-6' : 'translate-x-1'}`} />
             </div>
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <div className="bg-brand-navy text-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(13,43,94,0.2)]">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <div className="lg:col-span-2 bg-brand-navy text-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(13,43,94,0.2)] bg-gradient-to-br from-brand-navy to-[#1a3d7a]">
             <h3 className="text-slate-300 font-medium mb-1">Total Earnings</h3>
             <p className="text-5xl font-black tracking-tight">₦ {(stats?.totalEarnings ?? 0).toLocaleString()}</p>
             {stats && (
-              <p className="mt-4 text-brand-green font-bold text-sm">
-                {stats.growthPercent >= 0 ? '+' : ''}{stats.growthPercent}% vs last month
+              <p className="mt-4 text-brand-green font-bold text-sm bg-white/10 inline-block px-3 py-1 rounded-full">
+                {stats.growthPercent >= 0 ? '↑' : '↓'} {Math.abs(stats.growthPercent)}% vs last month
               </p>
             )}
           </div>
-          <div className="bg-white p-8 rounded-3xl shadow border border-gray-100">
+          <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
             <h3 className="text-gray-500 font-medium mb-1">Completed Jobs</h3>
             <p className="text-4xl font-black text-brand-navy">{stats?.completedJobs ?? 0}</p>
+            <p className="text-sm text-green-600 font-bold mt-4">98% Completion Rate</p>
           </div>
-          <div className="bg-white p-8 rounded-3xl shadow border border-gray-100">
+          <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
             <h3 className="text-gray-500 font-medium mb-1">Rating</h3>
             <p className="text-4xl font-black text-brand-navy">
               {stats?.averageRating ?? 0} <span className="text-lg text-gray-400 font-normal">/ 5.0</span>
             </p>
-            <p className="text-sm text-gray-400 mt-1">{stats?.reviewCount ?? 0} reviews</p>
+            <p className="text-sm text-gray-400 mt-4">{stats?.reviewCount ?? 0} reviews • &lt; 15m response</p>
           </div>
         </div>
 
