@@ -15,10 +15,17 @@ export interface BookingState {
   };
   priceEstimate: number | null;
 
+  isDraft: boolean;
+  lastSavedAt: number | null;
+  validationErrors: Record<string, string>;
+
   setStep: (step: number) => void;
   nextStep: () => void;
   prevStep: () => void;
   updateBooking: (data: Partial<BookingState>) => void;
+  setValidationError: (field: string, error: string) => void;
+  clearValidationErrors: () => void;
+  saveDraft: () => void;
   resetBooking: () => void;
 }
 
@@ -31,6 +38,9 @@ const initialState = {
   scheduledTime: null,
   location: { address: '', lat: null, lng: null },
   priceEstimate: null,
+  isDraft: false,
+  lastSavedAt: null,
+  validationErrors: {},
 };
 
 export const useBookingStore = create<BookingState>()(
@@ -40,7 +50,10 @@ export const useBookingStore = create<BookingState>()(
       setStep: (step) => set({ step }),
       nextStep: () => set((state) => ({ step: Math.min(state.step + 1, 5) })),
       prevStep: () => set((state) => ({ step: Math.max(state.step - 1, 1) })),
-      updateBooking: (data) => set((state) => ({ ...state, ...data })),
+      updateBooking: (data) => set((state) => ({ ...state, ...data, isDraft: true, lastSavedAt: Date.now() })),
+      setValidationError: (field, error) => set((state) => ({ validationErrors: { ...state.validationErrors, [field]: error } })),
+      clearValidationErrors: () => set({ validationErrors: {} }),
+      saveDraft: () => set({ isDraft: true, lastSavedAt: Date.now() }),
       resetBooking: () => set(initialState),
     }),
     {

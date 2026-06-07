@@ -9,10 +9,11 @@ import {
 import { createSubaccount } from '../utils/paystack';
 import { uploadArtisanAsset } from '../utils/s3';
 import { getSkillTestQuestions, gradeSkillTest, type SkillAnswer } from '../lib/skillTest';
-import { syncArtisanCategories, syncArtisanCategoriesByNames, getCategoriesForArtisanProfiles } from '../lib/categories';
+import { syncArtisanCategories, syncArtisanCategoriesByNames, getCategoriesForArtisanProfiles, getCompletedJobsCountForArtisans, getRatingDistribution } from '../lib/categories';
 import { setArtisanOnline, getArtisanOnline } from '../utils/availability';
 import prisma from '../prisma';
 import { VerificationStatus, BookingState, PaymentStatus } from '@prisma/client';
+import { requireEmailVerified } from '../middleware/requireEmailVerified';
 
 const router = Router();
 const SKILL_OPTIONS = ['Plumbing', 'Electrical', 'Carpentry', 'Cleaning', 'Painting', 'AC Repair'];
@@ -88,14 +89,8 @@ router.get('/public/:userId', async (req: AuthRequest, res: Response): Promise<v
   try {
     const profile = await prisma.artisanProfile.findFirst({
       where: { userId, deleted_at: null, isVerified: true, verificationStatus: VerificationStatus.APPROVED },
-      select: {
-        id: true,
-        userId: true,
-        firstName: true,
-        lastName: true,
-        skills: true,
-        portfolioUrls: true,
-        isVerified: true,
+      include: {
+        user: { select: { createdAt: true } },
       },
     });
 
@@ -107,17 +102,69 @@ router.get('/public/:userId', async (req: AuthRequest, res: Response): Promise<v
     const categoryMap = await getCategoriesForArtisanProfiles([profile.id]);
     const categories = categoryMap.get(profile.id) || [];
 
-    const reviews = await prisma.review.findMany({
-      where: { artisanId: userId },
-      select: { rating: true, comment: true, createdAt: true },
-      orderBy: { createdAt: 'desc' },
-      take: 10,
+    const completedBookings = await prisma.booking.count({
+      where: { artisanId: userId, state: { in: ['COMPLETED', 'REVIEWED'] } },
     });
+
+    const verificationBadges = [];
+    if (profile.nin || profile.bvn) verificationBadges.push('identity');
+    if (profile.skillTestPassedAt) verificationBadges.push('skills');
+    if (profile.backgroundCheckStatus === 'APPROVED') verificationBadges.push('background');
+    if (profile.isVerified) verificationBadges.push('references'); // Assuming full verification includes references
+
+    const [reviewsData, ratingDistribution] = await Promise.all([
+      prisma.review.findMany({
+        where: { artisanId: userId },
+        select: { 
+          rating: true, 
+          comment: true, 
+          createdAt: true,
+          booking: {
+            select: {
+              customer: {
+                select: {
+                  customerProfile: { select: { firstName: true, lastName: true } }
+                }
+              }
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      }),
+      getRatingDistribution(userId),
+    ]);
+
+    const reviews = reviewsData.map(r => ({
+      rating: r.rating,
+      comment: r.comment,
+      createdAt: r.createdAt,
+      reviewerName: r.booking?.customer?.customerProfile 
+        ? `${r.booking.customer.customerProfile.firstName} ${r.booking.customer.customerProfile.lastName}` 
+        : 'A verified customer',
+    }));
 
     const averageRating =
       reviews.length > 0 ? Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) * 10) / 10 : 0;
 
-    res.json({ ...profile, categories, averageRating, reviewCount: reviews.length, reviews });
+    res.json({
+      id: profile.id,
+      userId: profile.userId,
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      skills: profile.skills,
+      portfolioUrls: profile.portfolioUrls,
+      isVerified: profile.isVerified,
+      categories,
+      averageRating,
+      reviewCount: reviews.length,
+      reviews,
+      completedJobsCount: completedBookings,
+      memberSince: profile.user.createdAt,
+      verificationBadges,
+      responseTimeMinutes: 15, // Stub value until tracked
+      ratingDistribution,
+    });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load profile' });
   }
@@ -391,7 +438,7 @@ router.post('/verification/step-4', authenticate, requireRole(['ARTISAN']), asyn
   }
 });
 
-router.post('/verification/submit', authenticate, requireRole(['ARTISAN']), async (req: AuthRequest, res: Response): Promise<void> => {
+router.post('/verification/submit', authenticate, requireRole(['ARTISAN']), requireEmailVerified, async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user!.userId;
 
   try {

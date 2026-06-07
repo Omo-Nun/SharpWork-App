@@ -1,7 +1,8 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../prisma';
 import { setPublicRlsContext } from '../middleware/rls';
-import { getCategoriesForArtisanProfiles, getReviewStatsForArtisans } from '../lib/categories';
+import { getCategoriesForArtisanProfiles, getReviewStatsForArtisans, getCompletedJobsCountForArtisans } from '../lib/categories';
+import { Prisma } from '@prisma/client';
 
 const router = Router();
 const ALLOWED_RADIUS_KM = [5, 10, 20, 50];
@@ -17,7 +18,7 @@ function parseCategorySlugs(raw: unknown): string[] {
 }
 
 router.get('/', async (req: Request, res: Response): Promise<void> => {
-  const { lat, lng, radiusKm, categories, skill, q } = req.query;
+  const { lat, lng, radiusKm, categories, skill, q, sortBy } = req.query;
 
   if (!lat || !lng || !radiusKm) {
     res.status(400).json({ error: 'lat, lng, and radiusKm are required' });
@@ -36,6 +37,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
   const categorySlugs = parseCategorySlugs(categories);
   const skillFilter = typeof skill === 'string' ? skill.trim() : '';
   const query = typeof q === 'string' ? q.trim().toLowerCase() : '';
+  const sortOption = typeof sortBy === 'string' ? sortBy : 'distance';
 
   if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
     res.status(400).json({ error: 'Invalid lat or lng' });
@@ -93,6 +95,18 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       distance: number | bigint;
     };
 
+    const joins = sortOption === 'rating'
+      ? Prisma.sql`LEFT JOIN (SELECT "artisanId", AVG(rating) as avg_rating FROM "Review" GROUP BY "artisanId") r ON r."artisanId" = ap."userId"`
+      : sortOption === 'jobs_completed'
+      ? Prisma.sql`LEFT JOIN (SELECT "artisanId", COUNT(id) as completed_count FROM "Booking" WHERE state IN ('COMPLETED', 'REVIEWED') AND deleted_at IS NULL GROUP BY "artisanId") b ON b."artisanId" = ap."userId"`
+      : Prisma.sql``;
+
+    const orderClause = sortOption === 'rating'
+      ? Prisma.sql`ORDER BY r.avg_rating DESC NULLS LAST, distance ASC`
+      : sortOption === 'jobs_completed'
+      ? Prisma.sql`ORDER BY b.completed_count DESC NULLS LAST, distance ASC`
+      : Prisma.sql`ORDER BY distance ASC`;
+
     const artisans = matchingProfileIds
       ? await prisma.$queryRaw<ArtisanSearchRow[]>`
           SELECT 
@@ -111,6 +125,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
               ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)::geography
             ) as distance
           FROM "ArtisanProfile" ap
+          ${joins}
           WHERE ap.deleted_at IS NULL
           AND ap."isVerified" = true
           AND ap."verificationStatus" = 'APPROVED'::"VerificationStatus"
@@ -121,7 +136,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
             ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)::geography,
             ${radiusInMeters}
           )
-          ORDER BY distance ASC
+          ${orderClause}
           LIMIT 50;
         `
       : await prisma.$queryRaw<ArtisanSearchRow[]>`
@@ -141,6 +156,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
               ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)::geography
             ) as distance
           FROM "ArtisanProfile" ap
+          ${joins}
           WHERE ap.deleted_at IS NULL
           AND ap."isVerified" = true
           AND ap."verificationStatus" = 'APPROVED'::"VerificationStatus"
@@ -150,7 +166,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
             ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)::geography,
             ${radiusInMeters}
           )
-          ORDER BY distance ASC
+          ${orderClause}
           LIMIT 50;
         `;
 
@@ -176,9 +192,10 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 
     const profileIds = results.map((r) => r.id);
     const userIds = results.map((r) => r.userId);
-    const [categoryMap, reviewMap] = await Promise.all([
+    const [categoryMap, reviewMap, completedJobsMap] = await Promise.all([
       getCategoriesForArtisanProfiles(profileIds),
       getReviewStatsForArtisans(userIds),
+      getCompletedJobsCountForArtisans(userIds),
     ]);
 
     const enriched = results.map((a) => {
@@ -188,6 +205,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
         categories: categoryMap.get(a.id) || [],
         averageRating: stats.averageRating,
         reviewCount: stats.reviewCount,
+        completedJobsCount: completedJobsMap.get(a.userId) || 0,
       };
     });
 

@@ -22,9 +22,11 @@ export interface SearchArtisan {
   skills: string[];
   categories: ServiceCategory[];
   isOnline: boolean;
+  isVerified: boolean;
   distanceKm: number;
   averageRating: number;
   reviewCount: number;
+  completedJobsCount: number;
   lat: number;
   lng: number;
 }
@@ -67,6 +69,7 @@ export async function searchArtisans(params: {
   radiusKm: number;
   categories?: string[];
   q?: string;
+  sortBy?: 'distance' | 'rating' | 'jobs_completed';
 }): Promise<SearchArtisan[]> {
   const query = new URLSearchParams({
     lat: String(params.lat),
@@ -75,6 +78,7 @@ export async function searchArtisans(params: {
   });
   if (params.categories?.length) query.set('categories', params.categories.join(','));
   if (params.q) query.set('q', params.q);
+  if (params.sortBy) query.set('sortBy', params.sortBy);
   return apiGet<SearchArtisan[]>(`/search?${query.toString()}`);
 }
 
@@ -144,7 +148,12 @@ export async function fetchPublicArtisanProfile(userId: string) {
     isVerified: boolean;
     averageRating: number;
     reviewCount: number;
-    reviews: Array<{ rating: number; comment: string | null; createdAt: string }>;
+    completedJobsCount: number;
+    memberSince: string;
+    verificationBadges: string[];
+    responseTimeMinutes: number;
+    ratingDistribution: Record<string, number>;
+    reviews: Array<{ rating: number; comment: string | null; createdAt: string; reviewerName: string }>;
   }>(`/artisan/public/${userId}`);
 }
 
