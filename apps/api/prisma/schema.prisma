@@ -47,6 +47,7 @@ model User {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   deleted_at      DateTime?
+  expoPushToken   String?
 
   customerProfile           CustomerProfile?
   artisanProfile            ArtisanProfile?

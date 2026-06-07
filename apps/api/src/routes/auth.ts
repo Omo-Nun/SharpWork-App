@@ -480,4 +480,24 @@ router.post('/logout', async (req: Request, res: Response): Promise<void> => {
   res.status(200).json({ message: 'Logged out successfully' });
 });
 
+router.post('/push-token', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  const { pushToken } = req.body;
+
+  if (!pushToken || typeof pushToken !== 'string') {
+    res.status(400).json({ error: 'Push token is required' });
+    return;
+  }
+
+  try {
+    await prisma.user.update({
+      where: { id: req.user!.userId },
+      data: { expoPushToken: pushToken },
+    });
+    res.status(200).json({ message: 'Push token registered successfully' });
+  } catch (error) {
+    console.error('Push token registration error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;

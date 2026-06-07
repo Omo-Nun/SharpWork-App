@@ -193,7 +193,8 @@ function BookingWizardContent() {
               rows={5}
               value={serviceDetails}
               onChange={(e) => updateBooking({ serviceDetails: e.target.value })}
-              <div className="flex justify-between text-xs text-gray-500 mt-2 px-1">
+            />
+            <div className="flex justify-between text-xs text-gray-500 mt-2 px-1">
                 <span>{serviceDetails.length} / 20 min characters</span>
               </div>
             </div>

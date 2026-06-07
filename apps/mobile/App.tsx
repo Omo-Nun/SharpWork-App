@@ -2,19 +2,38 @@ import { useEffect } from 'react';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
+import axios from 'axios';
+import { getAccessToken } from './src/utils/secureStore';
 import AppNavigator from './src/navigation/AppNavigator';
 
 const LOCATION_TASK_NAME = 'background-location-task';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
 
-TaskManager.defineTask(LOCATION_TASK_NAME, ({ data, error }) => {
+TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
   if (error) {
     console.error('Background location error:', error);
     return;
   }
   if (data) {
     const { locations } = data as any;
-    console.log('Background location update:', locations);
-    // TODO: POST to /api/artisan/location when job is In Progress
+    if (locations && locations.length > 0) {
+      const location = locations[0];
+      console.log('Background location update:', location.coords);
+      try {
+        const token = await getAccessToken();
+        if (token) {
+          await axios.patch(`${API_URL}/api/artisan/location`, {
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude
+          }, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        }
+      } catch (err) {
+        console.error('Failed to post background location', err);
+      }
+    }
   }
 });
 
@@ -34,9 +53,22 @@ export default function App() {
       // Push notification permissions
       const { status: notifStatus } = await Notifications.requestPermissionsAsync();
       if (notifStatus === 'granted') {
-        const pushToken = await Notifications.getExpoPushTokenAsync();
-        console.log('Expo Push Token:', pushToken.data);
-        // TODO: Register push token with backend /api/auth/push-token
+        try {
+          const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+          const pushToken = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
+          console.log('Expo Push Token:', pushToken.data);
+          
+          const token = await getAccessToken();
+          if (token) {
+            await axios.post(`${API_URL}/api/auth/push-token`, {
+              pushToken: pushToken.data
+            }, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+          }
+        } catch (err) {
+          console.error('Failed to register push token', err);
+        }
       }
 
       // Foreground + background location permissions

@@ -2,6 +2,8 @@ import request from 'supertest';
 import app from '../app';
 import prisma from '../prisma';
 import { connectRedis, getRedis } from '../lib/redis';
+import { createTestUser, deleteTestUsers, TestUserContext } from './helpers/testUsers';
+
 
 describe('Auth security flows', () => {
   const testPhone = '+2348099900011';
@@ -35,5 +37,22 @@ describe('Auth security flows', () => {
     expect(res.status).toBe(200);
     expect(res.body.checks.database).toBe(true);
     expect(res.body.checks.redis).toBe(true);
+  });
+  it('POST /auth/push-token registers push token successfully', async () => {
+    const user = await createTestUser('CUSTOMER');
+    try {
+      const res = await request(app)
+        .post('/auth/push-token')
+        .set('Authorization', `Bearer ${user.accessToken}`)
+        .send({ pushToken: 'ExponentPushToken[abcdef123456]' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toMatch(/Push token registered successfully/);
+
+      const dbUser = await prisma.user.findUnique({ where: { id: user.userId } });
+      expect(dbUser?.expoPushToken).toBe('ExponentPushToken[abcdef123456]');
+    } finally {
+      await deleteTestUsers([user.userId]);
+    }
   });
 });
