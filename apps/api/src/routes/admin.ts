@@ -507,6 +507,7 @@ router.get('/categories', async (_req: Request, res: Response) => {
   try {
     const categories = await prisma.serviceCategory.findMany({
       where: { deleted_at: null },
+      include: { group: true },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });
     res.json(categories);
@@ -517,7 +518,7 @@ router.get('/categories', async (_req: Request, res: Response) => {
 
 router.post('/categories', async (req: Request, res: Response) => {
   try {
-    const { name, description, icon, sortOrder, isActive } = req.body;
+    const { name, description, icon, sortOrder, isActive, groupId } = req.body;
     if (!name || typeof name !== 'string') {
       res.status(400).json({ error: 'name is required' });
       return;
@@ -531,6 +532,7 @@ router.post('/categories', async (req: Request, res: Response) => {
         description: typeof description === 'string' ? description.trim() : null,
         icon: typeof icon === 'string' ? icon.trim() : null,
         sortOrder: typeof sortOrder === 'number' ? sortOrder : 0,
+        groupId: typeof groupId === 'string' && groupId ? groupId : null,
         isActive: isActive !== false,
       },
     });
@@ -544,7 +546,7 @@ router.post('/categories', async (req: Request, res: Response) => {
 router.patch('/categories/:id', async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
-    const { name, description, icon, sortOrder, isActive } = req.body;
+    const { name, description, icon, sortOrder, isActive, groupId } = req.body;
 
     const existing = await prisma.serviceCategory.findFirst({ where: { id, deleted_at: null } });
     if (!existing) {
@@ -559,6 +561,7 @@ router.patch('/categories/:id', async (req: Request, res: Response) => {
         ...(typeof description === 'string' ? { description: description.trim() } : {}),
         ...(typeof icon === 'string' ? { icon: icon.trim() } : {}),
         ...(typeof sortOrder === 'number' ? { sortOrder } : {}),
+        ...(groupId !== undefined ? { groupId: groupId || null } : {}),
         ...(typeof isActive === 'boolean' ? { isActive } : {}),
       },
     });
@@ -578,6 +581,80 @@ router.delete('/categories/:id', async (req: Request, res: Response) => {
     res.json(category);
   } catch (error) {
     res.status(500).json({ error: 'Failed to deactivate category' });
+  }
+});
+
+router.get('/category-groups', async (_req: Request, res: Response) => {
+  try {
+    const groups = await prisma.categoryGroup.findMany({
+      where: { deleted_at: null },
+      orderBy: { sortOrder: 'asc' },
+    });
+    res.json(groups);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to list category groups' });
+  }
+});
+
+router.post('/category-groups', async (req: Request, res: Response) => {
+  try {
+    const { name, sortOrder, isActive } = req.body;
+    if (!name || typeof name !== 'string') {
+      res.status(400).json({ error: 'name is required' });
+      return;
+    }
+
+    const slug = slugifyCategory(name);
+    const group = await prisma.categoryGroup.create({
+      data: {
+        name: name.trim(),
+        slug,
+        sortOrder: typeof sortOrder === 'number' ? sortOrder : 0,
+        isActive: isActive !== false,
+      },
+    });
+    res.status(201).json(group);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to create category group' });
+  }
+});
+
+router.patch('/category-groups/:id', async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const { name, sortOrder, isActive } = req.body;
+
+    const existing = await prisma.categoryGroup.findFirst({ where: { id, deleted_at: null } });
+    if (!existing) {
+      res.status(404).json({ error: 'Group not found' });
+      return;
+    }
+
+    const group = await prisma.categoryGroup.update({
+      where: { id },
+      data: {
+        ...(typeof name === 'string' ? { name: name.trim(), slug: slugifyCategory(name) } : {}),
+        ...(typeof sortOrder === 'number' ? { sortOrder } : {}),
+        ...(typeof isActive === 'boolean' ? { isActive } : {}),
+      },
+    });
+    res.json(group);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update category group' });
+  }
+});
+
+router.delete('/category-groups/:id', async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const group = await prisma.categoryGroup.update({
+      where: { id },
+      data: { isActive: false, deleted_at: new Date() },
+    });
+    res.json(group);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to deactivate category group' });
   }
 });
 

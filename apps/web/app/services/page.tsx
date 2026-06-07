@@ -96,32 +96,44 @@ function ServicesContent() {
 
           {!isLoading && !error && categories.length > 0 && (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
-                {categories.map((cat: ServiceCategory) => {
-                  const active = selected.includes(cat.slug);
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => toggleSlug(cat.slug)}
-                      className={`text-left p-6 rounded-2xl border-2 transition-all duration-300 transform hover:-translate-y-1 ${
-                        active
-                          ? 'border-brand-green bg-brand-green/5 shadow-lg shadow-brand-green/10'
-                          : 'border-gray-100 bg-white hover:border-gray-300 hover:shadow-md'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start mb-4">
-                        <span className={`text-4xl p-3 rounded-2xl ${active ? 'bg-white shadow-sm' : 'bg-gray-50'}`}>{cat.icon || '🔧'}</span>
-                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${active ? 'bg-brand-green border-brand-green text-white' : 'border-gray-200'}`}>
-                          {active && <span className="text-xs font-bold">✓</span>}
-                        </div>
-                      </div>
-                      <h3 className="font-bold text-xl text-brand-navy mb-1">{cat.name}</h3>
-                      <p className="text-sm text-gray-500 leading-relaxed">{cat.description}</p>
-                    </button>
-                  );
-                })}
-              </div>
+              {Object.entries(
+                categories.reduce((acc, cat) => {
+                  const groupName = cat.group?.name || 'Other Services';
+                  if (!acc[groupName]) acc[groupName] = [];
+                  acc[groupName].push(cat);
+                  return acc;
+                }, {} as Record<string, ServiceCategory[]>)
+              ).map(([groupName, groupCategories]) => (
+                <div key={groupName} className="mb-12">
+                  <h2 className="text-2xl font-black text-brand-navy mb-6 pb-2 border-b-2 border-gray-100">{groupName}</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {groupCategories.map((cat: ServiceCategory) => {
+                      const active = selected.includes(cat.slug);
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => toggleSlug(cat.slug)}
+                          className={`text-left p-6 rounded-2xl border-2 transition-all duration-300 transform hover:-translate-y-1 ${
+                            active
+                              ? 'border-brand-green bg-brand-green/5 shadow-lg shadow-brand-green/10'
+                              : 'border-gray-100 bg-white hover:border-gray-300 hover:shadow-md'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start mb-4">
+                            <span className={`text-4xl p-3 rounded-2xl ${active ? 'bg-white shadow-sm' : 'bg-gray-50'}`}>{cat.icon || '🔧'}</span>
+                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${active ? 'bg-brand-green border-brand-green text-white' : 'border-gray-200'}`}>
+                              {active && <span className="text-xs font-bold">✓</span>}
+                            </div>
+                          </div>
+                          <h3 className="font-bold text-xl text-brand-navy mb-1">{cat.name}</h3>
+                          <p className="text-sm text-gray-500 leading-relaxed">{cat.description}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
 
               {selected.length > 0 && (
                 <div className="bg-brand-navy/5 p-6 rounded-2xl border border-brand-navy/10 flex flex-col sm:flex-row items-center justify-between gap-4 sticky bottom-6 z-30 backdrop-blur-md">

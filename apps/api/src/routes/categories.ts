@@ -17,6 +17,14 @@ router.get('/', async (_req: Request, res: Response): Promise<void> => {
         description: true,
         icon: true,
         sortOrder: true,
+        group: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            sortOrder: true
+          }
+        }
       },
     });
     res.json(categories);

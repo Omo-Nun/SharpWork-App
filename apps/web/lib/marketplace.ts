@@ -12,6 +12,12 @@ export interface ServiceCategory {
   description: string | null;
   icon: string | null;
   sortOrder?: number;
+  group?: {
+    id: string;
+    name: string;
+    slug: string;
+    sortOrder: number;
+  } | null;
 }
 
 export interface SearchArtisan {

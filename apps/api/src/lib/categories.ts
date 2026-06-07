@@ -106,16 +106,33 @@ export async function getCompletedJobsCountForArtisans(artisanUserIds: string[])
 }
 
 export async function getCategoriesForArtisanProfiles(profileIds: string[]) {
-  if (profileIds.length === 0) return new Map<string, Array<{ id: string; name: string; slug: string; icon: string | null }>>();
+  if (profileIds.length === 0) return new Map<string, Array<{ id: string; name: string; slug: string; icon: string | null; group: any }>>();
 
   const links = await prisma.artisanServiceCategory.findMany({
     where: { artisanProfileId: { in: profileIds } },
     include: {
-      category: { select: { id: true, name: true, slug: true, icon: true, isActive: true, deleted_at: true } },
+      category: { 
+        select: { 
+          id: true, 
+          name: true, 
+          slug: true, 
+          icon: true, 
+          isActive: true, 
+          deleted_at: true,
+          group: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              sortOrder: true
+            }
+          }
+        } 
+      },
     },
   });
 
-  const map = new Map<string, Array<{ id: string; name: string; slug: string; icon: string | null }>>();
+  const map = new Map<string, Array<{ id: string; name: string; slug: string; icon: string | null; group: any }>>();
   for (const link of links) {
     if (!link.category.isActive || link.category.deleted_at) continue;
     const list = map.get(link.artisanProfileId) || [];
@@ -124,6 +141,7 @@ export async function getCategoriesForArtisanProfiles(profileIds: string[]) {
       name: link.category.name,
       slug: link.category.slug,
       icon: link.category.icon,
+      group: link.category.group,
     });
     map.set(link.artisanProfileId, list);
   }

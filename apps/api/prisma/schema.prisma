@@ -112,6 +112,18 @@ model ArtisanProfile {
   serviceCategories   ArtisanServiceCategory[]
 }
 
+model CategoryGroup {
+  id          String            @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String            @unique
+  sortOrder   Int               @default(0)
+  isActive    Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  deleted_at  DateTime?
+  categories  ServiceCategory[]
+}
+
 model ServiceCategory {
   id          String    @id @default(uuid()) @db.Uuid
   name        String
@@ -120,6 +132,8 @@ model ServiceCategory {
   icon        String?
   isActive    Boolean   @default(true)
   sortOrder   Int       @default(0)
+  groupId     String?   @db.Uuid
+  group       CategoryGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   deleted_at  DateTime?
