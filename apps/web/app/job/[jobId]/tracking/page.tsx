@@ -3,7 +3,7 @@
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { GoogleMap } from '../../../../components/GoogleMap';
+import { OpenStreetMap } from '../../../../components/OpenStreetMap';
 import { useAuth } from '../../../../context/AuthContext';
 import { chatStatusMessage, isChatOpen } from '../../../../lib/chat-gating';
 import {
@@ -211,7 +211,7 @@ export default function JobTrackingPage({ params }: { params: Promise<{ jobId: s
 
       <div className="flex-1 relative bg-gray-200">
         {bookingState === 'IN_PROGRESS' && coords ? (
-          <GoogleMap
+          <OpenStreetMap
             lat={coords.lat}
             lng={coords.lng}
             className="absolute inset-0 w-full h-full"
