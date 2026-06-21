@@ -39,11 +39,12 @@ enum PaymentStatus {
 
 model User {
   id              String    @id @default(uuid()) @db.Uuid
-  email           String    @unique
-  passwordHash    String
-  phoneNumber     String    @unique
+  email           String?   @unique
+  passwordHash    String?
+  phoneNumber     String?   @unique
   role            Role
   emailVerifiedAt DateTime?
+  phoneVerifiedAt DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   deleted_at      DateTime?
@@ -185,7 +186,8 @@ model Booking {
   artisan         User          @relation("ArtisanBookings", fields: [artisanId], references: [id])
   state           BookingState  @default(PENDING)
   description     String
-  price           Float
+  mediaUrls       String[]      @default([])
+  price           Float?
   scheduledDate   DateTime?
   scheduledTime   String?
   serviceAddress  String?

@@ -10,7 +10,8 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, isAuthenticated, user, isLoading: authLoading } = useAuth();
-  const [email, setEmail] = useState('');
+  const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,8 +35,8 @@ function LoginForm() {
     try {
       const result = await apiPost<{
         accessToken: string;
-        user: { id: string; role: string; email: string };
-      }>('/auth/login', { email, password });
+        user: { id: string; role: string; email?: string; phoneNumber?: string };
+      }>('/auth/login', { identifier, password });
 
       const fullUser = await apiGet<AuthUser>('/auth/me', result.accessToken);
       login(result.accessToken, fullUser);
@@ -48,8 +49,13 @@ function LoginForm() {
       }
     } catch (err) {
       if (err instanceof ApiError && err.code === 'EMAIL_NOT_VERIFIED') {
-        const unverifiedEmail = typeof err.data?.email === 'string' ? err.data.email : email;
+        const unverifiedEmail = typeof err.data?.email === 'string' ? err.data.email : identifier;
         router.push(`/auth/check-email?email=${encodeURIComponent(unverifiedEmail)}`);
+        return;
+      }
+      if (err instanceof ApiError && err.code === 'PHONE_NOT_VERIFIED') {
+        const unverifiedPhone = typeof err.data?.phoneNumber === 'string' ? err.data.phoneNumber : identifier;
+        router.push(`/auth/verify-phone?phone=${encodeURIComponent(unverifiedPhone)}`);
         return;
       }
 
@@ -85,15 +91,38 @@ function LoginForm() {
         )}
 
         <form className="space-y-6" onSubmit={handleSubmit}>
+          <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
+            <button
+              type="button"
+              onClick={() => { setAuthMethod('email'); setIdentifier(''); }}
+              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
+                authMethod === 'email' ? 'bg-white text-brand-green shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Email
+            </button>
+            <button
+              type="button"
+              onClick={() => { setAuthMethod('phone'); setIdentifier(''); }}
+              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
+                authMethod === 'phone' ? 'bg-white text-brand-green shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Phone Number
+            </button>
+          </div>
+
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {authMethod === 'email' ? 'Email Address' : 'Phone Number'}
+            </label>
             <input
-              type="email"
+              type={authMethod === 'email' ? 'email' : 'tel'}
               required
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              autoComplete={authMethod === 'email' ? 'email' : 'tel'}
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder={authMethod === 'email' ? 'you@example.com' : '+234 800 000 0000'}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent transition-all"
             />
           </div>

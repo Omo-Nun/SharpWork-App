@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { AuthProvider } from '../context/AuthContext';
 
-const PUBLIC_EXACT = new Set(['/', '/search', '/services']);
+const PUBLIC_EXACT = new Set(['/', '/search', '/services', '/about', '/blog', '/contact', '/faq']);
 
 function isPublicPath(pathname: string): boolean {
   if (PUBLIC_EXACT.has(pathname)) return true;

@@ -14,10 +14,10 @@ function RegisterForm() {
   const nextParam = searchParams.get('next');
 
   const [role, setRole] = useState<Role>(initialRole);
+  const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -28,19 +28,28 @@ function RegisterForm() {
     setLoading(true);
 
     try {
-      const result = await apiPost<{ email: string }>('/auth/register', {
+      const result = await apiPost<{ email?: string; phoneNumber?: string }>('/auth/register', {
         firstName,
         lastName,
-        email,
-        phoneNumber,
+        email: authMethod === 'email' ? identifier : undefined,
+        phoneNumber: authMethod === 'phone' ? identifier : undefined,
         password,
         role,
       });
 
-      const checkEmailUrl = `/auth/check-email?email=${encodeURIComponent(result.email)}${
-        nextParam ? `&next=${encodeURIComponent(nextParam)}` : ''
-      }`;
-      router.push(checkEmailUrl);
+      if (authMethod === 'email' && result.email) {
+        const checkEmailUrl = `/auth/check-email?email=${encodeURIComponent(result.email)}${
+          nextParam ? `&next=${encodeURIComponent(nextParam)}` : ''
+        }`;
+        router.push(checkEmailUrl);
+      } else if (authMethod === 'phone' && result.phoneNumber) {
+        const verifyPhoneUrl = `/auth/verify-phone?phone=${encodeURIComponent(result.phoneNumber)}${
+          nextParam ? `&next=${encodeURIComponent(nextParam)}` : ''
+        }`;
+        router.push(verifyPhoneUrl);
+      } else {
+        router.push(`/auth/login${nextParam ? `?next=${encodeURIComponent(nextParam)}` : ''}`);
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Registration failed. Please try again.');
     } finally {
@@ -119,27 +128,38 @@ function RegisterForm() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-            <input
-              type="email"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent transition-all"
-            />
+          <div className="flex bg-gray-100 p-1 rounded-xl mb-4">
+            <button
+              type="button"
+              onClick={() => { setAuthMethod('email'); setIdentifier(''); }}
+              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
+                authMethod === 'email' ? 'bg-white text-brand-green shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Use Email
+            </button>
+            <button
+              type="button"
+              onClick={() => { setAuthMethod('phone'); setIdentifier(''); }}
+              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
+                authMethod === 'phone' ? 'bg-white text-brand-green shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Use Phone Number
+            </button>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {authMethod === 'email' ? 'Email Address' : 'Phone Number'}
+            </label>
             <input
-              type="tel"
+              type={authMethod === 'email' ? 'email' : 'tel'}
               required
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              placeholder="+234 800 000 0000"
+              autoComplete={authMethod === 'email' ? 'email' : 'tel'}
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder={authMethod === 'email' ? 'you@example.com' : '+234 800 000 0000'}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent transition-all"
             />
           </div>
@@ -159,7 +179,7 @@ function RegisterForm() {
           </div>
 
           <p className="text-sm text-gray-500">
-            We will send a verification link to your email before you can log in.
+            We will send a verification code to your {authMethod === 'email' ? 'email' : 'phone number'} before you can log in.
           </p>
 
           <button
