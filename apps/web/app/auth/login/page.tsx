@@ -16,6 +16,11 @@ function LoginForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Phone passwordless flow states
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [devOtp, setDevOtp] = useState('');
+
   useEffect(() => {
     if (!authLoading && isAuthenticated && user) {
       const nextPath = searchParams.get('next') || searchParams.get('returnUrl');
@@ -33,19 +38,46 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      const result = await apiPost<{
-        accessToken: string;
-        user: { id: string; role: string; email?: string; phoneNumber?: string };
-      }>('/auth/login', { identifier, password });
+      if (authMethod === 'phone') {
+        if (!otpSent) {
+          const result = await apiPost<{ message: string; phoneNumber: string; devOtp?: string }>('/auth/passwordless/request', { phoneNumber: identifier });
+          setOtpSent(true);
+          if (result.devOtp) {
+            setDevOtp(result.devOtp);
+          }
+          setLoading(false);
+          return;
+        } else {
+          const result = await apiPost<{
+            accessToken: string;
+            user: { id: string; role: string; phoneNumber?: string };
+          }>('/auth/passwordless/verify', { phoneNumber: identifier, otp });
 
-      const fullUser = await apiGet<AuthUser>('/auth/me', result.accessToken);
-      login(result.accessToken, fullUser);
+          const fullUser = await apiGet<AuthUser>('/auth/me', result.accessToken);
+          login(result.accessToken, fullUser);
 
-      const nextPath = searchParams.get('next') || searchParams.get('returnUrl');
-      if (nextPath && nextPath.startsWith('/')) {
-        router.push(nextPath);
+          const nextPath = searchParams.get('next') || searchParams.get('returnUrl');
+          if (nextPath && nextPath.startsWith('/')) {
+            router.push(nextPath);
+          } else {
+            router.push(getDashboardPath(fullUser.role));
+          }
+        }
       } else {
-        router.push(getDashboardPath(fullUser.role));
+        const result = await apiPost<{
+          accessToken: string;
+          user: { id: string; role: string; email?: string; phoneNumber?: string };
+        }>('/auth/login', { identifier, password });
+
+        const fullUser = await apiGet<AuthUser>('/auth/me', result.accessToken);
+        login(result.accessToken, fullUser);
+
+        const nextPath = searchParams.get('next') || searchParams.get('returnUrl');
+        if (nextPath && nextPath.startsWith('/')) {
+          router.push(nextPath);
+        } else {
+          router.push(getDashboardPath(fullUser.role));
+        }
       }
     } catch (err) {
       if (err instanceof ApiError && err.code === 'EMAIL_NOT_VERIFIED') {
@@ -94,7 +126,7 @@ function LoginForm() {
           <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
             <button
               type="button"
-              onClick={() => { setAuthMethod('email'); setIdentifier(''); }}
+              onClick={() => { setAuthMethod('email'); setIdentifier(''); setOtpSent(false); setOtp(''); setDevOtp(''); }}
               className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
                 authMethod === 'email' ? 'bg-white text-brand-green shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}
@@ -103,7 +135,7 @@ function LoginForm() {
             </button>
             <button
               type="button"
-              onClick={() => { setAuthMethod('phone'); setIdentifier(''); }}
+              onClick={() => { setAuthMethod('phone'); setIdentifier(''); setOtpSent(false); setOtp(''); setDevOtp(''); }}
               className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
                 authMethod === 'phone' ? 'bg-white text-brand-green shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}
@@ -112,6 +144,12 @@ function LoginForm() {
             </button>
           </div>
 
+          {devOtp && (
+            <div className="p-3 bg-emerald-50 rounded-xl text-sm border border-emerald-200 text-center text-emerald-800">
+              <span className="font-bold">🛠️ Dev OTP:</span> <code className="bg-emerald-100 px-2 py-1 rounded font-mono text-base font-bold text-emerald-900">{devOtp}</code>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {authMethod === 'email' ? 'Email Address' : 'Phone Number'}
@@ -119,38 +157,59 @@ function LoginForm() {
             <input
               type={authMethod === 'email' ? 'email' : 'tel'}
               required
+              disabled={authMethod === 'phone' && otpSent}
               autoComplete={authMethod === 'email' ? 'email' : 'tel'}
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               placeholder={authMethod === 'email' ? 'you@example.com' : '+234 800 000 0000'}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent transition-all"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-            <input
-              type="password"
-              required
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent transition-all"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent transition-all disabled:opacity-60 disabled:bg-gray-50"
             />
           </div>
 
-          <div className="flex justify-end">
-            <Link href="/auth/forgot-password" className="text-sm font-medium text-brand-green hover:underline">
-              Forgot Password?
-            </Link>
-          </div>
+          {authMethod === 'email' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+              <input
+                type="password"
+                required
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent transition-all"
+              />
+            </div>
+          )}
+
+          {authMethod === 'phone' && otpSent && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Verification Code (OTP)</label>
+              <input
+                type="text"
+                required
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                placeholder="Enter 6-digit code"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent transition-all text-center tracking-widest font-mono text-lg"
+                maxLength={6}
+              />
+            </div>
+          )}
+
+          {authMethod === 'email' && (
+            <div className="flex justify-end">
+              <Link href="/auth/forgot-password" className="text-sm font-medium text-brand-green hover:underline">
+                Forgot Password?
+              </Link>
+            </div>
+          )}
 
           <button
             type="submit"
             disabled={loading}
             className="w-full bg-brand-green text-white py-3.5 rounded-xl font-bold text-lg hover:bg-green-700 hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {loading ? 'Logging In...' : 'Log In'}
+            {loading ? 'Processing...' : (authMethod === 'phone' ? (otpSent ? 'Verify & Log In' : 'Request OTP') : 'Log In')}
           </button>
         </form>
 

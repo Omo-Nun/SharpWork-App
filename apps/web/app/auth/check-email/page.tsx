@@ -8,9 +8,11 @@ import { apiPost, ApiError } from '../../../lib/api';
 function CheckEmailContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get('email') || '';
+  const initialDevVerifyUrl = searchParams.get('devVerificationUrl') || '';
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [devVerifyUrl, setDevVerifyUrl] = useState(initialDevVerifyUrl);
 
   async function handleResend() {
     if (!email) {
@@ -21,10 +23,14 @@ function CheckEmailContent() {
     setLoading(true);
     setError('');
     setMessage('');
+    setDevVerifyUrl('');
 
     try {
-      const result = await apiPost<{ message: string }>('/auth/resend-verification', { email });
+      const result = await apiPost<{ message: string; devVerificationUrl?: string }>('/auth/resend-verification', { email });
       setMessage(result.message);
+      if (result.devVerificationUrl) {
+        setDevVerifyUrl(result.devVerificationUrl);
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not resend verification email.');
     } finally {
@@ -65,6 +71,19 @@ function CheckEmailContent() {
         {error && (
           <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
+          </div>
+        )}
+
+        {devVerifyUrl && (
+          <div className="mb-6 p-4 rounded-2xl border border-emerald-200 bg-emerald-50 text-sm text-emerald-800 space-y-2 text-center">
+            <p className="font-bold">🛠️ Development Mode:</p>
+            <p className="text-xs text-emerald-600">Click below to bypass real email check and verify instantly.</p>
+            <a 
+              href={devVerifyUrl} 
+              className="inline-block bg-emerald-600 text-white font-bold px-4 py-2.5 rounded-xl hover:bg-emerald-700 transition-all text-xs"
+            >
+              Verify Email Instantly
+            </a>
           </div>
         )}
 

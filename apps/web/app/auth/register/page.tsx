@@ -38,12 +38,14 @@ function RegisterForm() {
       });
 
       if (authMethod === 'email' && result.email) {
-        const checkEmailUrl = `/auth/check-email?email=${encodeURIComponent(result.email)}${
+        const devVerifyParam = (result as any).devVerificationUrl ? `&devVerificationUrl=${encodeURIComponent((result as any).devVerificationUrl)}` : '';
+        const checkEmailUrl = `/auth/check-email?email=${encodeURIComponent(result.email)}${devVerifyParam}${
           nextParam ? `&next=${encodeURIComponent(nextParam)}` : ''
         }`;
         router.push(checkEmailUrl);
       } else if (authMethod === 'phone' && result.phoneNumber) {
-        const verifyPhoneUrl = `/auth/verify-phone?phone=${encodeURIComponent(result.phoneNumber)}${
+        const devOtpParam = (result as any).devOtp ? `&devOtp=${(result as any).devOtp}` : '';
+        const verifyPhoneUrl = `/auth/verify-phone?phone=${encodeURIComponent(result.phoneNumber)}${devOtpParam}${
           nextParam ? `&next=${encodeURIComponent(nextParam)}` : ''
         }`;
         router.push(verifyPhoneUrl);

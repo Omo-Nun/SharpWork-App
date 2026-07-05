@@ -81,6 +81,7 @@ model CustomerProfile {
   firstName  String
   lastName   String
   deleted_at DateTime?
+  address    String?
 }
 
 model ArtisanProfile {

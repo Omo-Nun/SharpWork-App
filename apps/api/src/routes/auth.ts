@@ -120,10 +120,13 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
       const verificationToken = await createVerificationTokenForUser(user.id);
       await sendVerificationEmail(normalizedEmail, verificationToken, firstName, getWebAppUrl(req));
 
+      const verifyUrl = `${getWebAppUrl(req)}/auth/verify-email?token=${encodeURIComponent(verificationToken)}`;
+
       res.status(201).json({
         message: 'Account created. Please check your email to verify your address before logging in.',
         requiresEmailVerification: true,
         email: normalizedEmail,
+        ...(process.env.NODE_ENV !== 'production' ? { devVerificationUrl: verifyUrl } : {}),
       });
     } else if (normalizedPhone) {
       const otp = generateOtp();
@@ -136,6 +139,7 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
         message: 'Account created. Please verify your phone number using the OTP sent to you.',
         requiresPhoneVerification: true,
         phoneNumber: normalizedPhone,
+        ...(process.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
       });
     }
   } catch (error) {
@@ -259,8 +263,11 @@ router.post('/resend-verification', async (req: Request, res: Response): Promise
     const verificationToken = await createVerificationTokenForUser(user.id);
     await sendVerificationEmail(normalizedEmail, verificationToken, firstName, getWebAppUrl(req));
 
+    const verifyUrl = `${getWebAppUrl(req)}/auth/verify-email?token=${encodeURIComponent(verificationToken)}`;
+
     res.status(200).json({
       message: 'If an unverified account exists for this email, a new verification link has been sent.',
+      ...(process.env.NODE_ENV !== 'production' ? { devVerificationUrl: verifyUrl } : {}),
     });
   } catch (error) {
     console.error(error);
@@ -345,6 +352,96 @@ router.post('/reset-password', async (req: Request, res: Response): Promise<void
     });
 
     res.status(200).json({ message: 'Password reset successfully. You can now log in.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/passwordless/request', async (req: Request, res: Response): Promise<void> => {
+  const { phoneNumber } = req.body;
+  if (!phoneNumber || typeof phoneNumber !== 'string' || phoneNumber.trim().length < 10) {
+    res.status(400).json({ error: 'A valid phone number is required' });
+    return;
+  }
+
+  const normalizedPhone = normalizePhone(phoneNumber);
+  try {
+    let user = await prisma.user.findFirst({
+      where: { phoneNumber: normalizedPhone, deleted_at: null },
+    });
+
+    // If user does not exist, let's create a CUSTOMER user automatically!
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          phoneNumber: normalizedPhone,
+          role: Role.CUSTOMER,
+          phoneVerifiedAt: new Date(),
+        },
+      });
+      await prisma.customerProfile.create({
+        data: {
+          userId: user.id,
+          firstName: 'Guest',
+          lastName: 'Customer',
+        },
+      });
+    }
+
+    if (await isOtpOnCooldown('phone_verification', normalizedPhone)) {
+      res.status(429).json({ error: 'Please wait 60 seconds before requesting another code.' });
+      return;
+    }
+
+    const otp = generateOtp();
+    const sent = await sendVerificationOtp(normalizedPhone, otp);
+
+    if (!sent) {
+      res.status(502).json({ error: 'Failed to send SMS. Please try again later.' });
+      return;
+    }
+
+    await storeOtp('phone_verification', normalizedPhone, otp, user.id);
+
+    res.status(200).json({
+      message: 'Verification code sent.',
+      phoneNumber: normalizedPhone,
+      ...(process.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/passwordless/verify', async (req: Request, res: Response): Promise<void> => {
+  const { phoneNumber, otp } = req.body;
+  if (!phoneNumber || !otp) {
+    res.status(400).json({ error: 'Phone number and OTP are required' });
+    return;
+  }
+
+  const normalizedPhone = normalizePhone(String(phoneNumber));
+
+  try {
+    const consumed = await consumeOtp('phone_verification', normalizedPhone, String(otp));
+
+    if (!consumed) {
+      res.status(400).json({ error: 'Invalid or expired OTP' });
+      return;
+    }
+
+    const user = await prisma.user.update({
+      where: { id: consumed.userId },
+      data: { phoneVerifiedAt: new Date() },
+    });
+
+    const { accessToken, refreshToken } = generateTokens(user.id, user.role);
+
+    res.cookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTIONS);
+
+    res.status(200).json({ accessToken, user: { id: user.id, role: user.role, phoneNumber: user.phoneNumber } });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal server error' });
@@ -464,6 +561,11 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response): Promise
         ? {
             firstName: profile.firstName,
             lastName: profile.lastName,
+            ...(user.customerProfile
+              ? {
+                  address: user.customerProfile.address,
+                }
+              : {}),
             ...(user.artisanProfile
               ? {
                   isVerified: user.artisanProfile.isVerified,
@@ -556,6 +658,49 @@ router.post('/push-token', authenticate, async (req: AuthRequest, res: Response)
     res.status(200).json({ message: 'Push token registered successfully' });
   } catch (error) {
     console.error('Push token registration error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.patch('/profile', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.user!.userId;
+  const { firstName, lastName, address } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { customerProfile: true, artisanProfile: true },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    if (user.customerProfile) {
+      const updated = await prisma.customerProfile.update({
+        where: { userId },
+        data: {
+          ...(firstName ? { firstName } : {}),
+          ...(lastName ? { lastName } : {}),
+          ...(address !== undefined ? { address } : {}),
+        },
+      });
+      res.status(200).json({ message: 'Profile updated successfully', profile: updated });
+    } else if (user.artisanProfile) {
+      const updated = await prisma.artisanProfile.update({
+        where: { userId },
+        data: {
+          ...(firstName ? { firstName } : {}),
+          ...(lastName ? { lastName } : {}),
+        },
+      });
+      res.status(200).json({ message: 'Profile updated successfully', profile: updated });
+    } else {
+      res.status(400).json({ error: 'Profile not found' });
+    }
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

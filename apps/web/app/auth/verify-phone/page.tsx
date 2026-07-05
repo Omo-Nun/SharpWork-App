@@ -10,6 +10,7 @@ function VerifyPhoneForm() {
   const searchParams = useSearchParams();
   const phoneParam = searchParams.get('phone') || '';
   const nextParam = searchParams.get('next');
+  const devOtp = searchParams.get('devOtp') || '';
 
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
@@ -51,6 +52,12 @@ function VerifyPhoneForm() {
         {error && (
           <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
+          </div>
+        )}
+
+        {devOtp && (
+          <div className="mb-6 p-4 rounded-2xl border border-emerald-200 bg-emerald-50 text-sm text-emerald-800 text-center">
+            <span className="font-bold">🛠️ Dev OTP:</span> <code className="bg-emerald-100 px-2 py-1 rounded font-mono text-base font-bold text-emerald-900">{devOtp}</code>
           </div>
         )}
 

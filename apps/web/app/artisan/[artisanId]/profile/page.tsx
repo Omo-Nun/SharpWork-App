@@ -249,7 +249,7 @@ export default function ArtisanProfilePage({ params }: { params: Promise<{ artis
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {profile.portfolioUrls.map((url, i) => (
-                    <button key={url} type="button" onClick={() => setLightboxIndex(i)} className="group relative overflow-hidden rounded-xl aspect-[4/3]">
+                    <button key={`${url}-${i}`} type="button" onClick={() => setLightboxIndex(i)} className="group relative overflow-hidden rounded-xl aspect-[4/3]">
                       <Image
                         src={url}
                         alt={`Portfolio ${i + 1}`}

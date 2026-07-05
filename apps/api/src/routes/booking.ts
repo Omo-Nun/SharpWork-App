@@ -726,4 +726,55 @@ router.post('/:id/checkout', authenticate, requireRole(['CUSTOMER']), validateUu
   }
 });
 
+// New endpoints for state transitions: en-route and arrived
+router.post('/:id/state/en-route', authenticate, requireRole(['ARTISAN']), validateUuidParam('id'), async (req: AuthRequest, res: Response): Promise<void> => {
+  const id = req.params.id as string;
+  const userId = req.user!.userId;
+  try {
+    const booking = await prisma.booking.findFirst({ where: { id, artisanId: userId, deleted_at: null } });
+    if (!booking) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+    const newState = BookingState.EN_ROUTE;
+    const valid = isValidBookingTransition(Role.ARTISAN, userId, booking, newState);
+    if (!valid) {
+      res.status(400).json({ error: `Invalid state transition from ${booking.state} to ${newState}` });
+      return;
+    }
+    const updated = await prisma.booking.update({ where: { id }, data: { state: newState } });
+    // Notify participants of state change
+    notifyBookingStateChanged(updated.customerId, updated.artisanId, { id: updated.id, state: updated.state });
+    res.status(200).json(serializeBooking(updated));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update booking to EN_ROUTE' });
+  }
+});
+
+router.post('/:id/state/arrived', authenticate, requireRole(['ARTISAN']), validateUuidParam('id'), async (req: AuthRequest, res: Response): Promise<void> => {
+  const id = req.params.id as string;
+  const userId = req.user!.userId;
+  try {
+    const booking = await prisma.booking.findFirst({ where: { id, artisanId: userId, deleted_at: null } });
+    if (!booking) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+    const newState = BookingState.ARRIVED;
+    const valid = isValidBookingTransition(Role.ARTISAN, userId, booking, newState);
+    if (!valid) {
+      res.status(400).json({ error: `Invalid state transition from ${booking.state} to ${newState}` });
+      return;
+    }
+    const updated = await prisma.booking.update({ where: { id }, data: { state: newState } });
+    // Notify participants of state change
+    notifyBookingStateChanged(updated.customerId, updated.artisanId, { id: updated.id, state: updated.state });
+    res.status(200).json(serializeBooking(updated));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update booking to ARRIVED' });
+  }
+});
+
 export default router;
