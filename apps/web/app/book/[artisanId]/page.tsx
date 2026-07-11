@@ -222,7 +222,7 @@ function BookingWizardContent() {
             <div>
               <label className="block text-sm font-bold text-brand-navy mb-2">Add Photos (Optional)</label>
               <div className="flex flex-wrap gap-4">
-                {mediaUrls.map((url, i) => (
+                {mediaUrls.map((url, i) => typeof url === 'string' && url.trim() !== '' ? (
                   <div key={i} className="relative w-24 h-24 rounded-xl border border-gray-200 overflow-hidden group">
                     <Image src={url} alt={`Upload ${i+1}`} fill unoptimized className="object-cover" />
                     <button 
@@ -232,7 +232,7 @@ function BookingWizardContent() {
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                   </div>
-                ))}
+                ) : null)}
                 
                 {mediaUrls.length < 3 && (
                   <label className="w-24 h-24 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:text-brand-green hover:border-brand-green hover:bg-brand-green/5 transition-colors cursor-pointer relative">
@@ -360,11 +360,11 @@ function BookingWizardContent() {
                   <div>
                     <dt className="text-gray-500 mb-2">Attached Media</dt>
                     <dd className="flex gap-2">
-                      {mediaUrls.map((url, i) => (
+                      {mediaUrls.map((url, i) => typeof url === 'string' && url.trim() !== '' ? (
                         <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200">
                           <Image src={url} alt={`Attached ${i+1}`} fill unoptimized className="object-cover" />
                         </div>
-                      ))}
+                      ) : null)}
                     </dd>
                   </div>
                 )}
