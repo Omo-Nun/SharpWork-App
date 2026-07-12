@@ -59,7 +59,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
         return;
       }
 
-      const categoryIds = matchedCategories.map((c) => c.id);
+      const categoryIds = matchedCategories.map((c: any) => c.id);
       const links = await prisma.artisanServiceCategory.findMany({
         where: { categoryId: { in: categoryIds } },
         select: { artisanProfileId: true, categoryId: true },
@@ -73,7 +73,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       }
 
       matchingProfileIds = [...countByProfile.entries()]
-        .filter(([, set]) => categoryIds.every((id) => set.has(id)))
+        .filter(([, set]) => categoryIds.every((id: any) => set.has(id)))
         .map(([profileId]) => profileId);
       if (matchingProfileIds.length === 0) {
         res.status(200).json([]);
@@ -170,36 +170,36 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
           LIMIT 50;
         `;
 
-    let results = artisans.map((a) => ({
+    let results = artisans.map((a: any) => ({
       ...a,
       distance: Number(a.distance),
       distanceKm: Math.round((Number(a.distance) / 1000) * 10) / 10,
     }));
 
     if (skillFilter) {
-      results = results.filter((a) =>
-        a.skills?.some((s) => s.toLowerCase().includes(skillFilter.toLowerCase()))
+      results = results.filter((a: any) =>
+        a.skills?.some((s: any) => s.toLowerCase().includes(skillFilter.toLowerCase()))
       );
     }
 
     if (query) {
-      results = results.filter((a) => {
+      results = results.filter((a: any) => {
         const name = `${a.firstName} ${a.lastName}`.toLowerCase();
         const skillsText = (a.skills || []).join(' ').toLowerCase();
         return name.includes(query) || skillsText.includes(query);
       });
     }
 
-    const profileIds = results.map((r) => r.id);
-    const userIds = results.map((r) => r.userId);
+    const profileIds = results.map((r: any) => r.id);
+    const userIds = results.map((r: any) => r.userId);
     const [categoryMap, reviewMap, completedJobsMap] = await Promise.all([
       getCategoriesForArtisanProfiles(profileIds),
       getReviewStatsForArtisans(userIds),
       getCompletedJobsCountForArtisans(userIds),
     ]);
 
-    const enriched = results.map((a) => {
-      const stats = reviewMap.get(a.userId) || { averageRating: 0, reviewCount: 0 };
+    const enriched = results.map((a: any) => {
+      const stats: { averageRating: number; reviewCount: number } = reviewMap.get(a.userId) || { averageRating: 0, reviewCount: 0 };
       return {
         ...a,
         categories: categoryMap.get(a.id) || [],

@@ -66,6 +66,7 @@ export function MapSimulator({ bookingId, isActive }: MapSimulatorProps) {
     const interval = setInterval(() => {
       routeIndex.current = (routeIndex.current + 1) % routeRef.current.length;
       const nextPos = routeRef.current[routeIndex.current];
+      if (!nextPos) return;
       setPosition(nextPos);
       
       if (bookingId) {

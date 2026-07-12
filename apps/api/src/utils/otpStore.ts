@@ -4,7 +4,7 @@ import { getRedis } from '../lib/redis';
 const OTP_TTL_SECONDS = 10 * 60; // 10 minutes per PRD
 const OTP_COOLDOWN_SECONDS = 60;
 
-export type OtpPurpose = 'password_reset';
+export type OtpPurpose = 'password_reset' | 'phone_verification';
 
 function otpKey(purpose: OtpPurpose, phoneNumber: string): string {
   return `otp:${purpose}:${phoneNumber}`;

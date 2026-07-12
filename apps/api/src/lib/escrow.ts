@@ -43,7 +43,7 @@ async function logEscrowAction(params: {
 async function transferArtisanPayout(
   booking: {
     id: string;
-    price: number;
+    price: number | null;
     platformFeePercent: number | null;
     escrowReleasedAmount: number;
     artisan: { artisanProfile: { settlementBank: string | null; accountNumber: string | null; firstName: string; lastName: string } | null };
@@ -88,7 +88,7 @@ export async function releaseEscrowForBooking(
   }
 
   const remaining = remainingArtisanPayout(
-    booking.price,
+    booking.price ?? 0,
     booking.platformFeePercent,
     booking.escrowReleasedAmount
   );
@@ -138,7 +138,7 @@ export async function releasePartialEscrowForBooking(
     throw new Error('Booking is not eligible for partial release');
   }
 
-  const netTotal = artisanNetTotal(booking.price, booking.platformFeePercent);
+  const netTotal = artisanNetTotal(booking.price ?? 0, booking.platformFeePercent);
   const targetRelease = Math.round(netTotal * (percent / 100) * 100) / 100;
   const alreadyReleased = booking.escrowReleasedAmount;
   const amountToRelease = Math.max(0, Math.round((targetRelease - alreadyReleased) * 100) / 100);
@@ -173,7 +173,7 @@ export async function releasePartialEscrowForBooking(
 
   return {
     released: transferred,
-    remaining: remainingArtisanPayout(booking.price, booking.platformFeePercent, newReleasedAmount),
+    remaining: remainingArtisanPayout(booking.price ?? 0, booking.platformFeePercent, newReleasedAmount),
   };
 }
 
@@ -189,7 +189,7 @@ export async function refundEscrowForBooking(
     throw new Error('No Paystack reference found for booking');
   }
 
-  await refundTransaction(booking.paystackRef, booking.price);
+  await refundTransaction(booking.paystackRef, booking.price ?? undefined);
 
   await prisma.booking.update({
     where: { id: booking.id },
@@ -199,7 +199,7 @@ export async function refundEscrowForBooking(
   await logEscrowAction({
     bookingId: booking.id,
     action: 'REFUND',
-    amount: booking.price,
+    amount: booking.price ?? undefined,
     actorId: options?.actorId,
     actorRole: options?.actorRole,
   });

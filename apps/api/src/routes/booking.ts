@@ -534,7 +534,7 @@ router.post('/payment/verify', authenticate, requireRole(['CUSTOMER']), async (r
       id: updated.id,
       state: updated.state,
       paymentStatus: updated.paymentStatus,
-      price: updated.price,
+      price: updated.price ?? 0,
     });
 
     res.status(200).json({ booking: updated });
@@ -651,7 +651,7 @@ router.post('/:id/quote', authenticate, requireRole(['ARTISAN']), validateUuidPa
     
     // Create the Paystack transaction since we now have a price
     const payment = await initializeTransaction(
-      booking.customer.email,
+      booking.customer.email ?? '',
       price,
       `${getWebAppUrl(req)}/book/payment/callback`,
       { bookingId: booking.id }
@@ -705,8 +705,8 @@ router.post('/:id/checkout', authenticate, requireRole(['CUSTOMER']), validateUu
     }
 
     const payment = await initializeTransaction(
-      booking.customer.email,
-      booking.price,
+      booking.customer.email ?? '',
+      booking.price ?? 0,
       `${getWebAppUrl(req)}/book/payment/callback`,
       { bookingId: booking.id }
     );

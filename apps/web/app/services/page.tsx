@@ -117,7 +117,7 @@ function ServicesContent() {
                         >
                           <div className="flex justify-between items-start mb-4">
                             <span className="p-3 rounded-2xl bg-gray-50 flex items-center justify-center">
-                              {getCategoryIcon(cat.slug, cat.icon)}
+                              {getCategoryIcon(cat.slug, cat.icon ?? undefined)}
                             </span>
                             <div className="w-8 h-8 rounded-full bg-brand-green/5 text-brand-green flex items-center justify-center transition-colors">
                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">

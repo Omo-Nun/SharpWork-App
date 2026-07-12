@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import prisma from '../prisma';
 import { generateTokens, verifyRefreshToken } from '../utils/jwt';
-import { Role } from '@prisma/client';
+import { Role, Prisma } from '@prisma/client';
 import { generateVerificationToken, hashVerificationToken } from '../utils/emailVerification';
 import { sendVerificationEmail } from '../utils/email';
 import { getWebAppUrl } from '../config/env';
@@ -586,7 +586,7 @@ router.delete('/account', authenticate, async (req: AuthRequest, res: Response):
   const now = new Date();
 
   try {
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const user = await tx.user.findUnique({
         where: { id: userId },
         include: { customerProfile: true, artisanProfile: true },
