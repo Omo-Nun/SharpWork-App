@@ -10,12 +10,15 @@ import {
   raiseBookingDispute,
   requestPartialRelease,
   updateBookingState,
+  markBookingEnRoute,
+  markBookingArrived,
   type BookingRecord,
 } from '../lib/marketplace';
 import { isChatOpen } from '../lib/chat-gating';
 import { useSocketConnection } from '../hooks/useSocket';
 import { useArtisanLocationPublisher } from '../hooks/useArtisanLocation';
 import { getSocket } from '../lib/socket';
+import { MapSimulator } from './MapSimulator';
 
 function paymentLabel(status: string, escrowReleased?: boolean, escrowReleasedAmount?: number) {
   if (status === 'PAID' && escrowReleasedAmount && escrowReleasedAmount > 0 && !escrowReleased) {
@@ -204,17 +207,20 @@ export function CustomerBookingsPanel() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-        <div className="bg-white p-6 rounded-3xl shadow border border-gray-100">
-          <h3 className="text-gray-500 font-medium mb-1">Active Bookings</h3>
-          <p className="text-4xl font-black text-brand-navy">{stats.active}</p>
+        <div className="bg-white p-6 rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 hover:scale-105 hover:border-brand-green/30 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-brand-green/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <h3 className="text-gray-500 font-medium mb-1 relative z-10">Active Bookings</h3>
+          <p className="text-4xl font-black text-brand-navy relative z-10">{stats.active}</p>
         </div>
-        <div className="bg-white p-6 rounded-3xl shadow border border-gray-100">
-          <h3 className="text-gray-500 font-medium mb-1">Completed Jobs</h3>
-          <p className="text-4xl font-black text-brand-navy">{stats.completed}</p>
+        <div className="bg-white p-6 rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 hover:scale-105 hover:border-brand-navy/30 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-brand-navy/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <h3 className="text-gray-500 font-medium mb-1 relative z-10">Completed Jobs</h3>
+          <p className="text-4xl font-black text-brand-navy relative z-10">{stats.completed}</p>
         </div>
-        <div className="bg-white p-6 rounded-3xl shadow border border-gray-100">
-          <h3 className="text-gray-500 font-medium mb-1">Total Spent</h3>
-          <p className="text-4xl font-black text-brand-navy">₦ {stats.spent.toLocaleString()}</p>
+        <div className="bg-white p-6 rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 hover:scale-105 hover:border-brand-orange/30 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-brand-orange/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <h3 className="text-gray-500 font-medium mb-1 relative z-10">Total Spent</h3>
+          <p className="text-4xl font-black text-brand-navy relative z-10">₦ {stats.spent.toLocaleString()}</p>
         </div>
       </div>
 
@@ -260,14 +266,14 @@ export function CustomerBookingsPanel() {
 
             <div className="space-y-4 mb-12">
               {filteredBookings.map((booking) => (
-          <div key={booking.id} className="bg-white rounded-3xl border border-gray-100 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div key={booking.id} className="bg-white rounded-3xl border border-gray-100 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-shadow duration-200">
             <div>
               <h3 className="font-bold text-lg text-brand-navy">{booking.description.slice(0, 60)}...</h3>
-              <p className="text-gray-500">{artisanName(booking)} • ₦{booking.price.toLocaleString()}</p>
+              <p className="text-gray-500 font-medium mt-1">{artisanName(booking)} • <span className="text-brand-green font-bold">₦{booking.price.toLocaleString()}</span></p>
               {booking.categorySlugs && booking.categorySlugs.length > 0 && (
-                <p className="text-sm text-gray-500 mt-1">{booking.categorySlugs.join(' · ')}</p>
+                <p className="text-xs text-brand-navy/60 font-medium uppercase tracking-wider mt-2">{booking.categorySlugs.join(' · ')}</p>
               )}
-              <p className="text-sm text-gray-400">{booking.serviceAddress || 'No address'}</p>
+              <p className="text-sm text-gray-400 mt-1">{booking.serviceAddress || 'No address provided'}</p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${paymentBadgeClass(booking.paymentStatus, booking.escrowReleased)}`}>
@@ -345,6 +351,8 @@ export function ArtisanBookingsPanel() {
 
   const inProgress = bookings.find((b) => b.state === 'IN_PROGRESS');
   useArtisanLocationPublisher(inProgress?.id, Boolean(inProgress));
+  
+  const activeSimBooking = bookings.find((b) => ['IN_PROGRESS', 'EN_ROUTE'].includes(b.state));
 
   const reload = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['bookings', 'mine'] });
@@ -367,7 +375,7 @@ export function ArtisanBookingsPanel() {
   }, [reload]);
 
   const pending = bookings.filter((b) => b.state === 'PENDING' && b.paymentStatus === 'PAID');
-  const active = bookings.filter((b) => ['ACCEPTED', 'IN_PROGRESS'].includes(b.state));
+  const active = bookings.filter((b) => ['ACCEPTED', 'IN_PROGRESS', 'EN_ROUTE', 'ARRIVED'].includes(b.state));
   const awaitingRelease = bookings.filter(
     (b) => b.state === 'COMPLETED' && !b.escrowReleased
   );
@@ -446,6 +454,17 @@ export function ArtisanBookingsPanel() {
 
       <div>
         <h2 className="text-2xl font-bold text-brand-navy mb-6">Active Jobs</h2>
+        
+        {activeSimBooking && (
+          <div className="mb-6">
+            <h3 className="font-bold text-lg text-brand-navy mb-4">Location Tracking & GPS Simulation</h3>
+            <MapSimulator 
+              bookingId={activeSimBooking.id} 
+              isActive={activeSimBooking.state === 'EN_ROUTE'} 
+            />
+          </div>
+        )}
+
         {active.length === 0 ? (
           <div className="bg-white p-6 rounded-2xl border text-gray-500">No active jobs.</div>
         ) : (
@@ -468,6 +487,32 @@ export function ArtisanBookingsPanel() {
                     </button>
                   )}
                   {booking.state === 'IN_PROGRESS' && (
+                    <button onClick={async () => {
+                      setActionError('');
+                      try {
+                        await markBookingEnRoute(booking.id);
+                        reload();
+                      } catch {
+                        setActionError('Failed to mark as En-Route');
+                      }
+                    }} className="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold text-sm">
+                      En-Route
+                    </button>
+                  )}
+                  {booking.state === 'EN_ROUTE' && (
+                    <button onClick={async () => {
+                      setActionError('');
+                      try {
+                        await markBookingArrived(booking.id);
+                        reload();
+                      } catch {
+                        setActionError('Failed to mark as Arrived');
+                      }
+                    }} className="bg-blue-800 text-white px-4 py-2 rounded-xl font-bold text-sm">
+                      Arrived
+                    </button>
+                  )}
+                  {['IN_PROGRESS', 'EN_ROUTE', 'ARRIVED'].includes(booking.state) && (
                     <>
                       <button onClick={() => setPartialBookingId(booking.id)} className="border border-brand-navy text-brand-navy px-4 py-2 rounded-xl font-bold text-sm">
                         Partial Release

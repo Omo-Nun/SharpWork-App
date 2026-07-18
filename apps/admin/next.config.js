@@ -23,6 +23,7 @@ const apiUrl = resolveApiUrlForBuild();
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  transpilePackages: ['@repo/api-config', '@repo/ui'],
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '../..'),
   async rewrites() {

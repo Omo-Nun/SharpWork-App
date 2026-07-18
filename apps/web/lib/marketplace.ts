@@ -116,6 +116,14 @@ export async function confirmBookingCompletion(id: string) {
   return apiPost<BookingRecord>(`/booking/${id}/confirm-completion`, {}, authHeader());
 }
 
+export async function markBookingEnRoute(id: string) {
+  return apiPost<BookingRecord>(`/booking/${id}/state/en-route`, {}, authHeader());
+}
+
+export async function markBookingArrived(id: string) {
+  return apiPost<BookingRecord>(`/booking/${id}/state/arrived`, {}, authHeader());
+}
+
 export async function requestPartialRelease(id: string, percent: 20 | 50 | 75) {
   return apiPost<BookingRecord>(`/booking/${id}/partial-release/request`, { percent }, authHeader());
 }

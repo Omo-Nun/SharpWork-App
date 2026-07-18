@@ -6,6 +6,7 @@ export interface BookingState {
   artisanId: string | null;
   categorySlugs: string[];
   serviceDetails: string;
+  mediaUrls: string[];
   scheduledDate: string | null;
   scheduledTime: string | null;
   location: {
@@ -13,7 +14,6 @@ export interface BookingState {
     lat: number | null;
     lng: number | null;
   };
-  priceEstimate: number | null;
 
   isDraft: boolean;
   lastSavedAt: number | null;
@@ -34,10 +34,10 @@ const initialState = {
   artisanId: null,
   categorySlugs: [] as string[],
   serviceDetails: '',
+  mediaUrls: [] as string[],
   scheduledDate: null,
   scheduledTime: null,
   location: { address: '', lat: null, lng: null },
-  priceEstimate: null,
   isDraft: false,
   lastSavedAt: null,
   validationErrors: {},
@@ -48,7 +48,7 @@ export const useBookingStore = create<BookingState>()(
     (set) => ({
       ...initialState,
       setStep: (step) => set({ step }),
-      nextStep: () => set((state) => ({ step: Math.min(state.step + 1, 5) })),
+      nextStep: () => set((state) => ({ step: Math.min(state.step + 1, 4) })),
       prevStep: () => set((state) => ({ step: Math.max(state.step - 1, 1) })),
       updateBooking: (data) => set((state) => ({ ...state, ...data, isDraft: true, lastSavedAt: Date.now() })),
       setValidationError: (field, error) => set((state) => ({ validationErrors: { ...state.validationErrors, [field]: error } })),

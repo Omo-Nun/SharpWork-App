@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "next build && npm run copy-standalone-assets",
-    "copy-standalone-assets": "cp -r .next/static .next/standalone/apps/admin/.next/static && cp -r public .next/standalone/apps/admin/public 2>/dev/null || true",
+    "copy-standalone-assets": "node -e \"const fs=require('fs'); fs.cpSync('.next/static', '.next/standalone/apps/admin/.next/static', {recursive:true,force:true}); try{fs.cpSync('public', '.next/standalone/apps/admin/public', {recursive:true,force:true})}catch(e){}\"",
     "start": "node ../../scripts/start-next-app.mjs admin",
     "lint": "eslint --max-warnings 0",
     "check-types": "next typegen && tsc --noEmit",

@@ -6,17 +6,35 @@ export default function LandingPage() {
     <main id="main-content" className="min-h-screen bg-gray-50 overflow-hidden font-sans">
       {/* Navbar with Glassmorphism */}
       <header className="fixed w-full top-0 z-50 bg-white/70 backdrop-blur-md border-b border-white/20 shadow-sm transition-all">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="text-2xl font-black text-brand-navy tracking-tighter flex items-center gap-2">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center gap-4">
+          <div className="text-2xl font-black text-brand-navy tracking-tighter flex items-center gap-2 whitespace-nowrap">
             <span className="bg-brand-green text-white w-8 h-8 rounded-lg flex items-center justify-center shadow-lg shadow-brand-green/30">S</span>
             Sharp<span className="text-brand-green">Work</span>
           </div>
-          <nav className="space-x-6 flex items-center">
-            <Link href="/services" className="font-medium text-gray-600 hover:text-brand-green transition-colors hidden md:block">Services</Link>
-            <Link href="/search" className="font-medium text-gray-600 hover:text-brand-green transition-colors hidden md:block">Find Artisans</Link>
-            <div className="h-6 w-px bg-gray-200 hidden md:block mx-2" />
-            <Link href="/auth/login" className="font-medium text-gray-700 hover:text-brand-green transition-colors">Log In</Link>
-            <Link href="/auth/register" className="bg-brand-navy text-white px-6 py-2.5 rounded-full font-bold hover:bg-gray-800 transition-all hover:shadow-lg transform hover:-translate-y-0.5">Sign Up</Link>
+
+          {/* Search Bar */}
+          <form action="/search" method="GET" className="hidden md:flex items-center flex-1 max-w-2xl mx-4 bg-white border border-gray-200 rounded-full shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+            <div className="flex items-center pl-4 pr-3 py-2 bg-gray-50/80 border-r border-gray-200 text-gray-500">
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              <span className="font-semibold text-sm whitespace-nowrap">I need a &ndash;</span>
+            </div>
+            <input 
+              type="text" 
+              name="q"
+              placeholder="Enter a service (e.g., Plumber, Carpenter)" 
+              className="flex-1 px-4 py-2.5 text-sm text-gray-800 bg-transparent focus:outline-none w-full"
+            />
+            <button type="submit" className="bg-brand-green hover:bg-emerald-500 text-white px-6 py-2.5 font-bold text-sm transition-colors h-full whitespace-nowrap">
+              Search
+            </button>
+          </form>
+
+          <nav className="space-x-4 lg:space-x-6 flex items-center whitespace-nowrap">
+            <Link href="/services" className="font-medium text-gray-600 hover:text-brand-green transition-colors hidden lg:block">Services</Link>
+            <Link href="/search" className="font-medium text-gray-600 hover:text-brand-green transition-colors hidden lg:block">Find Artisans</Link>
+            <div className="h-6 w-px bg-gray-200 hidden lg:block mx-1" />
+            <Link href="/auth/login" className="font-medium text-gray-700 hover:text-brand-green transition-colors hidden sm:block">Log In</Link>
+            <Link href="/auth/register" className="bg-brand-navy text-white px-5 lg:px-6 py-2 lg:py-2.5 rounded-full font-bold hover:bg-gray-800 transition-all hover:shadow-lg transform hover:-translate-y-0.5 text-sm lg:text-base">Sign Up</Link>
           </nav>
         </div>
       </header>

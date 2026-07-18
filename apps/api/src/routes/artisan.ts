@@ -46,7 +46,7 @@ router.get('/stats', authenticate, requireRole(['ARTISAN']), async (req: AuthReq
       prisma.review.findMany({ where: { artisanId: userId }, select: { rating: true } }),
     ]);
 
-    const totalEarnings = paidBookings.reduce((sum, b) => sum + b.price, 0);
+    const totalEarnings = paidBookings.reduce((sum: number, b) => sum + (b.price ?? 0), 0);
     const averageRating =
       reviews.length > 0 ? Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) * 10) / 10 : 0;
 
@@ -60,7 +60,7 @@ router.get('/stats', authenticate, requireRole(['ARTISAN']), async (req: AuthReq
     for (const booking of paidBookings) {
       const label = booking.updatedAt.toLocaleString('en-US', { month: 'short' });
       if (monthMap.has(label)) {
-        monthMap.set(label, (monthMap.get(label) || 0) + booking.price);
+        monthMap.set(label, (monthMap.get(label) || 0) + (booking.price ?? 0));
       }
     }
 
@@ -253,7 +253,7 @@ router.post('/verification/step-1', authenticate, requireRole(['ARTISAN']), asyn
       nin,
       firstName: profile.firstName,
       lastName: profile.lastName,
-      phoneNumber: profile.user.phoneNumber,
+      phoneNumber: profile.user.phoneNumber ?? undefined,
     });
 
     if (!ninResult.success) {

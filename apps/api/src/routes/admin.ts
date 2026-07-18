@@ -22,7 +22,7 @@ router.post('/totp/setup', authenticate, requireRole(['ADMIN']), async (req: Req
       data: { totpSecret: secret, totpEnabled: false },
     });
 
-    const otpAuthUrl = buildTotpUri(user!.email, secret);
+    const otpAuthUrl = buildTotpUri(user!.email ?? '', secret);
     const qrCode = await generateTotpQrCode(otpAuthUrl);
     res.json({ secret, otpAuthUrl, qrCode });
   } catch (error) {
@@ -228,7 +228,7 @@ router.get('/stats', async (_req: Request, res: Response) => {
           type: 'escrow' as const,
           id: b.id,
           title: `Escrow released for booking ${b.id.slice(0, 8)}`,
-          subtitle: `₦${b.price.toLocaleString()}`,
+          subtitle: `₦${(b.price ?? 0).toLocaleString()}`,
           status: 'RELEASED',
           createdAt: b.updatedAt,
         })),

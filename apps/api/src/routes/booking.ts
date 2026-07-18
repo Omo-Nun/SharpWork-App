@@ -394,34 +394,32 @@ router.post('/', authenticate, requireRole(['CUSTOMER']), requireEmailVerified, 
   const {
     artisanId,
     description,
-    price,
     scheduledDate,
     scheduledTime,
     serviceAddress,
     latitude,
     longitude,
     categorySlugs,
+    mediaUrls,
   } = req.body;
   const customerId = req.user!.userId;
 
-  if (!artisanId || !description || price === undefined) {
-    res.status(400).json({ error: 'artisanId, description, and price are required' });
+  if (!artisanId || !description) {
+    res.status(400).json({ error: 'artisanId and description are required' });
     return;
   }
 
-  if (typeof description !== 'string' || description.length < 20) {
-    res.status(400).json({ error: 'Description must be at least 20 characters' });
-    return;
-  }
-
-  const quotedPrice = Number(price);
-  if (!Number.isFinite(quotedPrice) || quotedPrice < 1000) {
-    res.status(400).json({ error: 'Agreed quote must be at least ₦1,000' });
+  if (typeof description !== 'string' || description.length < 10) {
+    res.status(400).json({ error: 'Description must be at least 10 characters' });
     return;
   }
 
   const slugs = Array.isArray(categorySlugs)
     ? categorySlugs.map((s: unknown) => String(s).trim().toLowerCase()).filter(Boolean)
+    : [];
+    
+  const urls = Array.isArray(mediaUrls)
+    ? mediaUrls.map((s: unknown) => String(s).trim()).filter(Boolean)
     : [];
 
   try {
@@ -442,18 +440,14 @@ router.post('/', authenticate, requireRole(['CUSTOMER']), requireEmailVerified, 
 
     const platformFeePercent = await getPlatformFeePercent();
 
-    const customer = await prisma.user.findUnique({
-      where: { id: customerId },
-      select: { email: true },
-    });
-
     const booking = await prisma.booking.create({
       data: {
         customerId,
         artisanId,
         state: BookingState.PENDING,
         description,
-        price: quotedPrice,
+        mediaUrls: urls,
+        price: null,
         categorySlugs: slugs,
         platformFeePercent,
         scheduledDate: scheduledDate ? new Date(scheduledDate) : null,
@@ -465,41 +459,31 @@ router.post('/', authenticate, requireRole(['CUSTOMER']), requireEmailVerified, 
       },
     });
 
-    const payment = await initializeTransaction(
-      customer!.email,
-      quotedPrice,
-      `${getWebAppUrl(req)}/book/payment/callback`,
-      { bookingId: booking.id }
-    );
-
-    await prisma.booking.update({
-      where: { id: booking.id },
-      data: { paystackRef: payment.reference },
-    });
-
+    // Notify artisan of the new inquiry
     notifyBookingCreated(artisanId, {
       id: booking.id,
       description: booking.description,
-      price: booking.price,
+      price: booking.price ?? 0,
       state: booking.state,
       paymentStatus: booking.paymentStatus,
+    });
+    
+    // Also send the initial inquiry description as the first chat message automatically
+    await prisma.message.create({
+      data: {
+        senderId: customerId,
+        receiverId: artisanId,
+        bookingId: booking.id,
+        content: `[SERVICE INQUIRY]\n${description}`,
+      },
     });
 
     res.status(201).json({
       booking,
-      payment: {
-        authorization_url: payment.authorization_url,
-        reference: payment.reference,
-      },
-      escrow: {
-        heldAmount: quotedPrice,
-        platformFeePercent,
-        artisanPayoutEstimate: Math.round(quotedPrice * (1 - platformFeePercent / 100) * 100) / 100,
-      },
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Failed to create booking' });
+    res.status(500).json({ error: 'Failed to create booking inquiry' });
   }
 });
 
@@ -541,6 +525,7 @@ router.post('/payment/verify', authenticate, requireRole(['CUSTOMER']), async (r
       where: { id: booking.id },
       data: {
         paymentStatus: PaymentStatus.PAID,
+        state: booking.state === BookingState.PENDING ? BookingState.IN_PROGRESS : undefined,
         platformFeePercent: booking.platformFeePercent ?? (await getPlatformFeePercent()),
       },
     });
@@ -549,7 +534,7 @@ router.post('/payment/verify', authenticate, requireRole(['CUSTOMER']), async (r
       id: updated.id,
       state: updated.state,
       paymentStatus: updated.paymentStatus,
-      price: updated.price,
+      price: updated.price ?? 0,
     });
 
     res.status(200).json({ booking: updated });
@@ -633,6 +618,162 @@ router.patch('/:id/state', authenticate, requireRole(['CUSTOMER', 'ARTISAN']), v
     res.status(200).json(serializeBooking(updatedBooking));
   } catch (error) {
     res.status(500).json({ error: 'Failed to update booking status' });
+  }
+});
+
+router.post('/:id/quote', authenticate, requireRole(['ARTISAN']), validateUuidParam('id'), async (req: AuthRequest, res: Response): Promise<void> => {
+  const id = req.params.id as string;
+  const userId = req.user!.userId;
+  const price = Number(req.body.price);
+
+  if (!Number.isFinite(price) || price < 1000) {
+    res.status(400).json({ error: 'A valid quote of at least ₦1,000 is required' });
+    return;
+  }
+
+  try {
+    const booking = await prisma.booking.findFirst({
+      where: { id, artisanId: userId, deleted_at: null },
+      include: { customer: { select: { email: true } } }
+    });
+
+    if (!booking) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+
+    if (booking.state !== BookingState.PENDING || booking.paymentStatus !== PaymentStatus.PENDING) {
+      res.status(400).json({ error: 'Cannot send quote for this booking' });
+      return;
+    }
+
+    const platformFeePercent = await getPlatformFeePercent();
+    
+    // Create the Paystack transaction since we now have a price
+    const payment = await initializeTransaction(
+      booking.customer.email ?? '',
+      price,
+      `${getWebAppUrl(req)}/book/payment/callback`,
+      { bookingId: booking.id }
+    );
+
+    const updated = await prisma.booking.update({
+      where: { id },
+      data: {
+        price,
+        paystackRef: payment.reference,
+        platformFeePercent,
+      },
+    });
+
+    res.status(200).json({
+      booking: serializeBooking(updated),
+      payment: {
+        authorization_url: payment.authorization_url,
+        reference: payment.reference,
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to send quote' });
+  }
+});
+
+router.post('/:id/checkout', authenticate, requireRole(['CUSTOMER']), validateUuidParam('id'), async (req: AuthRequest, res: Response): Promise<void> => {
+  const id = req.params.id as string;
+  const userId = req.user!.userId;
+
+  try {
+    const booking = await prisma.booking.findFirst({
+      where: { id, customerId: userId, deleted_at: null },
+      include: { customer: { select: { email: true } } }
+    });
+
+    if (!booking) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+
+    if (!booking.price || booking.price < 1000) {
+      res.status(400).json({ error: 'No valid quote has been set by the artisan yet' });
+      return;
+    }
+
+    if (booking.paymentStatus === PaymentStatus.PAID) {
+      res.status(400).json({ error: 'This booking is already paid' });
+      return;
+    }
+
+    const payment = await initializeTransaction(
+      booking.customer.email ?? '',
+      booking.price ?? 0,
+      `${getWebAppUrl(req)}/book/payment/callback`,
+      { bookingId: booking.id }
+    );
+
+    await prisma.booking.update({
+      where: { id },
+      data: { paystackRef: payment.reference },
+    });
+
+    res.status(200).json({
+      authorization_url: payment.authorization_url,
+      reference: payment.reference
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to initialize checkout' });
+  }
+});
+
+// New endpoints for state transitions: en-route and arrived
+router.post('/:id/state/en-route', authenticate, requireRole(['ARTISAN']), validateUuidParam('id'), async (req: AuthRequest, res: Response): Promise<void> => {
+  const id = req.params.id as string;
+  const userId = req.user!.userId;
+  try {
+    const booking = await prisma.booking.findFirst({ where: { id, artisanId: userId, deleted_at: null } });
+    if (!booking) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+    const newState = BookingState.EN_ROUTE;
+    const valid = isValidBookingTransition(Role.ARTISAN, userId, booking, newState);
+    if (!valid) {
+      res.status(400).json({ error: `Invalid state transition from ${booking.state} to ${newState}` });
+      return;
+    }
+    const updated = await prisma.booking.update({ where: { id }, data: { state: newState } });
+    // Notify participants of state change
+    notifyBookingStateChanged(updated.customerId, updated.artisanId, { id: updated.id, state: updated.state });
+    res.status(200).json(serializeBooking(updated));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update booking to EN_ROUTE' });
+  }
+});
+
+router.post('/:id/state/arrived', authenticate, requireRole(['ARTISAN']), validateUuidParam('id'), async (req: AuthRequest, res: Response): Promise<void> => {
+  const id = req.params.id as string;
+  const userId = req.user!.userId;
+  try {
+    const booking = await prisma.booking.findFirst({ where: { id, artisanId: userId, deleted_at: null } });
+    if (!booking) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+    const newState = BookingState.ARRIVED;
+    const valid = isValidBookingTransition(Role.ARTISAN, userId, booking, newState);
+    if (!valid) {
+      res.status(400).json({ error: `Invalid state transition from ${booking.state} to ${newState}` });
+      return;
+    }
+    const updated = await prisma.booking.update({ where: { id }, data: { state: newState } });
+    // Notify participants of state change
+    notifyBookingStateChanged(updated.customerId, updated.artisanId, { id: updated.id, state: updated.state });
+    res.status(200).json(serializeBooking(updated));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update booking to ARRIVED' });
   }
 });
 

@@ -1,38 +1,38 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchServiceCategories, type ServiceCategory } from '../../lib/marketplace';
+import { 
+  Wrench, Zap, Sparkles, Hammer, Paintbrush, 
+  Wind, BatteryCharging, PenTool, Scissors, Truck, Shield
+} from 'lucide-react';
+
+function getCategoryIcon(slug: string, apiIcon?: string) {
+  const mapping: Record<string, React.ReactNode> = {
+    'plumbing': <Wrench className="w-8 h-8 text-brand-navy" />,
+    'electrical': <Zap className="w-8 h-8 text-brand-navy" />,
+    'cleaning': <Sparkles className="w-8 h-8 text-brand-navy" />,
+    'carpentry': <Hammer className="w-8 h-8 text-brand-navy" />,
+    'painting': <Paintbrush className="w-8 h-8 text-brand-navy" />,
+    'ac-repair': <Wind className="w-8 h-8 text-brand-navy" />,
+    'generator-repair': <BatteryCharging className="w-8 h-8 text-brand-navy" />,
+    'moving': <Truck className="w-8 h-8 text-brand-navy" />,
+    'beauty': <Scissors className="w-8 h-8 text-brand-navy" />,
+    'security': <Shield className="w-8 h-8 text-brand-navy" />
+  };
+  return mapping[slug] || <PenTool className="w-8 h-8 text-brand-navy" />;
+}
 
 function ServicesContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const preselectedKey = searchParams.get('categories') ?? '';
-  const preselected = preselectedKey.split(',').filter(Boolean);
-
-  const [selected, setSelected] = useState<string[]>(preselected);
-
-  useEffect(() => {
-    if (preselected.length) setSelected(preselected);
-  }, [preselectedKey, preselected]);
 
   const { data: categories = [], isLoading, error } = useQuery({
     queryKey: ['categories'],
     queryFn: fetchServiceCategories,
   });
-
-  function toggleSlug(slug: string) {
-    setSelected((prev) =>
-      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
-    );
-  }
-
-  function findArtisans() {
-    if (selected.length === 0) return;
-    router.push(`/search?categories=${selected.join(',')}`);
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans pb-20">
@@ -58,7 +58,7 @@ function ServicesContent() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto p-6 md:p-8 -mt-10 relative z-20">
+      <div className="max-w-7xl mx-auto p-6 md:p-8 -mt-10 relative z-20">
         <div className="bg-white rounded-[2rem] shadow-xl p-8 md:p-12 border border-gray-100">
           
           {isLoading && (
@@ -108,22 +108,21 @@ function ServicesContent() {
                   <h2 className="text-2xl font-black text-brand-navy mb-6 pb-2 border-b-2 border-gray-100">{groupName}</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {groupCategories.map((cat: ServiceCategory) => {
-                      const active = selected.includes(cat.slug);
                       return (
                         <button
                           key={cat.id}
                           type="button"
-                          onClick={() => toggleSlug(cat.slug)}
-                          className={`text-left p-6 rounded-2xl border-2 transition-all duration-300 transform hover:-translate-y-1 ${
-                            active
-                              ? 'border-brand-green bg-brand-green/5 shadow-lg shadow-brand-green/10'
-                              : 'border-gray-100 bg-white hover:border-gray-300 hover:shadow-md'
-                          }`}
+                          onClick={() => router.push(`/search?categories=${cat.slug}`)}
+                          className="text-left p-6 rounded-2xl border-2 transition-all duration-300 transform hover:-translate-y-1 border-gray-100 bg-white hover:border-gray-300 hover:shadow-md"
                         >
                           <div className="flex justify-between items-start mb-4">
-                            <span className={`text-4xl p-3 rounded-2xl ${active ? 'bg-white shadow-sm' : 'bg-gray-50'}`}>{cat.icon || '🔧'}</span>
-                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${active ? 'bg-brand-green border-brand-green text-white' : 'border-gray-200'}`}>
-                              {active && <span className="text-xs font-bold">✓</span>}
+                            <span className="p-3 rounded-2xl bg-gray-50 flex items-center justify-center">
+                              {getCategoryIcon(cat.slug, cat.icon ?? undefined)}
+                            </span>
+                            <div className="w-8 h-8 rounded-full bg-brand-green/5 text-brand-green flex items-center justify-center transition-colors">
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                              </svg>
                             </div>
                           </div>
                           <h3 className="font-bold text-xl text-brand-navy mb-1">{cat.name}</h3>
@@ -134,27 +133,6 @@ function ServicesContent() {
                   </div>
                 </div>
               ))}
-
-              {selected.length > 0 && (
-                <div className="bg-brand-navy/5 p-6 rounded-2xl border border-brand-navy/10 flex flex-col sm:flex-row items-center justify-between gap-4 sticky bottom-6 z-30 backdrop-blur-md">
-                  <div>
-                    <h4 className="font-bold text-brand-navy text-lg">{selected.length} service{selected.length !== 1 ? 's' : ''} selected</h4>
-                    <p className="text-sm text-gray-500 hidden sm:block">Ready to find the best artisans for the job.</p>
-                  </div>
-                  <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <button type="button" onClick={() => setSelected([])} className="text-gray-500 font-medium hover:text-gray-900 transition-colors px-4 py-3">
-                      Clear
-                    </button>
-                    <button
-                      type="button"
-                      onClick={findArtisans}
-                      className="w-full sm:w-auto bg-brand-green text-white px-8 py-4 rounded-xl font-bold hover:bg-emerald-500 transition-all shadow-lg hover:shadow-brand-green/30 transform hover:-translate-y-0.5"
-                    >
-                      Find Artisans →
-                    </button>
-                  </div>
-                </div>
-              )}
             </>
           )}
         </div>

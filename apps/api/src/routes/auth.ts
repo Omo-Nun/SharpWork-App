@@ -2,14 +2,14 @@ import { Router, Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import prisma from '../prisma';
 import { generateTokens, verifyRefreshToken } from '../utils/jwt';
-import { Role } from '@prisma/client';
+import { Role, Prisma } from '@prisma/client';
 import { generateVerificationToken, hashVerificationToken } from '../utils/emailVerification';
 import { sendVerificationEmail } from '../utils/email';
 import { getWebAppUrl } from '../config/env';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { generateOtp } from '../utils/otp';
 import { consumeOtp, isOtpOnCooldown, storeOtp } from '../utils/otpStore';
-import { sendPasswordResetOtp } from '../utils/termii';
+import { sendPasswordResetOtp, sendVerificationOtp } from '../utils/termii';
 import { setArtisanOnline } from '../utils/availability';
 import { verifyTotpToken } from '../utils/totp';
 import { REFRESH_COOKIE_OPTIONS } from '../utils/cookies';
@@ -29,16 +29,19 @@ const RESEND_COOLDOWN_MS = 60 * 1000;
 function validateRegistrationBody(body: Record<string, unknown>): string | null {
   const { email, password, phoneNumber, role, firstName, lastName } = body;
 
-  if (!email || !password || !phoneNumber || !role || !firstName || !lastName) {
-    return 'All fields are required';
+  if (!password || !role || !firstName || !lastName) {
+    return 'Password, role, first name, and last name are required';
   }
-  if (typeof email !== 'string' || !EMAIL_REGEX.test(email)) {
+  if (!email && !phoneNumber) {
+    return 'Either email or phone number is required';
+  }
+  if (email && (typeof email !== 'string' || !EMAIL_REGEX.test(email))) {
     return 'A valid email address is required';
   }
   if (typeof password !== 'string' || password.length < 8) {
     return 'Password must be at least 8 characters';
   }
-  if (typeof phoneNumber !== 'string' || phoneNumber.trim().length < 10) {
+  if (phoneNumber && (typeof phoneNumber !== 'string' || phoneNumber.trim().length < 10)) {
     return 'A valid phone number is required';
   }
   if (role !== Role.CUSTOMER && role !== Role.ARTISAN) {
@@ -74,12 +77,16 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
   }
 
   const { email, password, phoneNumber, role, firstName, lastName } = req.body;
-  const normalizedEmail = String(email).trim().toLowerCase();
-  const normalizedPhone = normalizePhone(String(phoneNumber));
+  const normalizedEmail = email ? String(email).trim().toLowerCase() : null;
+  const normalizedPhone = phoneNumber ? normalizePhone(String(phoneNumber)) : null;
 
   try {
+    const OR_conditions = [];
+    if (normalizedEmail) OR_conditions.push({ email: normalizedEmail });
+    if (normalizedPhone) OR_conditions.push({ phoneNumber: normalizedPhone });
+
     const existingUser = await prisma.user.findFirst({
-      where: { OR: [{ email: normalizedEmail }, { phoneNumber: normalizedPhone }] },
+      where: { OR: OR_conditions },
     });
 
     if (existingUser) {
@@ -109,14 +116,32 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
       });
     }
 
-    const verificationToken = await createVerificationTokenForUser(user.id);
-    await sendVerificationEmail(normalizedEmail, verificationToken, firstName, getWebAppUrl(req));
+    if (normalizedEmail) {
+      const verificationToken = await createVerificationTokenForUser(user.id);
+      await sendVerificationEmail(normalizedEmail, verificationToken, firstName, getWebAppUrl(req));
 
-    res.status(201).json({
-      message: 'Account created. Please check your email to verify your address before logging in.',
-      requiresEmailVerification: true,
-      email: normalizedEmail,
-    });
+      const verifyUrl = `${getWebAppUrl(req)}/auth/verify-email?token=${encodeURIComponent(verificationToken)}`;
+
+      res.status(201).json({
+        message: 'Account created. Please check your email to verify your address before logging in.',
+        requiresEmailVerification: true,
+        email: normalizedEmail,
+        ...(process.env.NODE_ENV !== 'production' ? { devVerificationUrl: verifyUrl } : {}),
+      });
+    } else if (normalizedPhone) {
+      const otp = generateOtp();
+      const sent = await sendVerificationOtp(normalizedPhone, otp);
+      if (sent) {
+        await storeOtp('phone_verification', normalizedPhone, otp, user.id);
+      }
+      
+      res.status(201).json({
+        message: 'Account created. Please verify your phone number using the OTP sent to you.',
+        requiresPhoneVerification: true,
+        phoneNumber: normalizedPhone,
+        ...(process.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
+      });
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal server error' });
@@ -170,6 +195,36 @@ router.post('/verify-email', async (req: Request, res: Response): Promise<void> 
   }
 });
 
+router.post('/verify-phone', async (req: Request, res: Response): Promise<void> => {
+  const { phoneNumber, otp } = req.body;
+
+  if (!phoneNumber || !otp) {
+    res.status(400).json({ error: 'Phone number and OTP are required' });
+    return;
+  }
+
+  const normalizedPhone = normalizePhone(String(phoneNumber));
+
+  try {
+    const consumed = await consumeOtp('phone_verification', normalizedPhone, String(otp));
+
+    if (!consumed) {
+      res.status(400).json({ error: 'Invalid or expired OTP' });
+      return;
+    }
+
+    await prisma.user.update({
+      where: { id: consumed.userId },
+      data: { phoneVerifiedAt: new Date() },
+    });
+
+    res.status(200).json({ message: 'Phone number verified successfully. You can now log in.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 router.post('/resend-verification', async (req: Request, res: Response): Promise<void> => {
   const { email } = req.body;
 
@@ -208,8 +263,11 @@ router.post('/resend-verification', async (req: Request, res: Response): Promise
     const verificationToken = await createVerificationTokenForUser(user.id);
     await sendVerificationEmail(normalizedEmail, verificationToken, firstName, getWebAppUrl(req));
 
+    const verifyUrl = `${getWebAppUrl(req)}/auth/verify-email?token=${encodeURIComponent(verificationToken)}`;
+
     res.status(200).json({
       message: 'If an unverified account exists for this email, a new verification link has been sent.',
+      ...(process.env.NODE_ENV !== 'production' ? { devVerificationUrl: verifyUrl } : {}),
     });
   } catch (error) {
     console.error(error);
@@ -300,29 +358,128 @@ router.post('/reset-password', async (req: Request, res: Response): Promise<void
   }
 });
 
-router.post('/login', async (req: Request, res: Response): Promise<void> => {
-  const { email, password, totp } = req.body;
-
-  if (!email || !password) {
-    res.status(400).json({ error: 'Email and password are required' });
+router.post('/passwordless/request', async (req: Request, res: Response): Promise<void> => {
+  const { phoneNumber } = req.body;
+  if (!phoneNumber || typeof phoneNumber !== 'string' || phoneNumber.trim().length < 10) {
+    res.status(400).json({ error: 'A valid phone number is required' });
     return;
   }
 
-  const normalizedEmail = String(email).trim().toLowerCase();
-
+  const normalizedPhone = normalizePhone(phoneNumber);
   try {
-    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    let user = await prisma.user.findFirst({
+      where: { phoneNumber: normalizedPhone, deleted_at: null },
+    });
 
-    if (!user || user.deleted_at || !(await bcrypt.compare(password, user.passwordHash))) {
-      res.status(401).json({ error: 'Invalid email or password' });
+    // If user does not exist, let's create a CUSTOMER user automatically!
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          phoneNumber: normalizedPhone,
+          role: Role.CUSTOMER,
+          phoneVerifiedAt: new Date(),
+        },
+      });
+      await prisma.customerProfile.create({
+        data: {
+          userId: user.id,
+          firstName: 'Guest',
+          lastName: 'Customer',
+        },
+      });
+    }
+
+    if (await isOtpOnCooldown('phone_verification', normalizedPhone)) {
+      res.status(429).json({ error: 'Please wait 60 seconds before requesting another code.' });
       return;
     }
 
-    if (!user.emailVerifiedAt) {
+    const otp = generateOtp();
+    const sent = await sendVerificationOtp(normalizedPhone, otp);
+
+    if (!sent) {
+      res.status(502).json({ error: 'Failed to send SMS. Please try again later.' });
+      return;
+    }
+
+    await storeOtp('phone_verification', normalizedPhone, otp, user.id);
+
+    res.status(200).json({
+      message: 'Verification code sent.',
+      phoneNumber: normalizedPhone,
+      ...(process.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/passwordless/verify', async (req: Request, res: Response): Promise<void> => {
+  const { phoneNumber, otp } = req.body;
+  if (!phoneNumber || !otp) {
+    res.status(400).json({ error: 'Phone number and OTP are required' });
+    return;
+  }
+
+  const normalizedPhone = normalizePhone(String(phoneNumber));
+
+  try {
+    const consumed = await consumeOtp('phone_verification', normalizedPhone, String(otp));
+
+    if (!consumed) {
+      res.status(400).json({ error: 'Invalid or expired OTP' });
+      return;
+    }
+
+    const user = await prisma.user.update({
+      where: { id: consumed.userId },
+      data: { phoneVerifiedAt: new Date() },
+    });
+
+    const { accessToken, refreshToken } = generateTokens(user.id, user.role);
+
+    res.cookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTIONS);
+
+    res.status(200).json({ accessToken, user: { id: user.id, role: user.role, phoneNumber: user.phoneNumber } });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/login', async (req: Request, res: Response): Promise<void> => {
+  const { identifier, password, totp } = req.body;
+
+  if (!identifier || !password) {
+    res.status(400).json({ error: 'Email/Phone and password are required' });
+    return;
+  }
+
+  const normalizedIdentifier = String(identifier).trim().toLowerCase();
+  const isEmail = EMAIL_REGEX.test(normalizedIdentifier);
+  const searchCondition = isEmail ? { email: normalizedIdentifier } : { phoneNumber: normalizePhone(String(identifier)) };
+
+  try {
+    const user = await prisma.user.findFirst({ where: searchCondition });
+
+    if (!user || user.deleted_at || !(await bcrypt.compare(password, user.passwordHash || ''))) {
+      res.status(401).json({ error: 'Invalid credentials' });
+      return;
+    }
+
+    if (isEmail && !user.emailVerifiedAt) {
       res.status(403).json({
         error: 'Please verify your email before logging in.',
         code: 'EMAIL_NOT_VERIFIED',
         email: user.email,
+      });
+      return;
+    } else if (!isEmail && !user.phoneVerifiedAt) {
+      res.status(403).json({
+        error: 'Please verify your phone number before logging in.',
+        code: 'PHONE_NOT_VERIFIED',
+        phoneNumber: user.phoneNumber,
       });
       return;
     }
@@ -404,6 +561,11 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response): Promise
         ? {
             firstName: profile.firstName,
             lastName: profile.lastName,
+            ...(user.customerProfile
+              ? {
+                  address: user.customerProfile.address,
+                }
+              : {}),
             ...(user.artisanProfile
               ? {
                   isVerified: user.artisanProfile.isVerified,
@@ -424,7 +586,7 @@ router.delete('/account', authenticate, async (req: AuthRequest, res: Response):
   const now = new Date();
 
   try {
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const user = await tx.user.findUnique({
         where: { id: userId },
         include: { customerProfile: true, artisanProfile: true },
@@ -496,6 +658,49 @@ router.post('/push-token', authenticate, async (req: AuthRequest, res: Response)
     res.status(200).json({ message: 'Push token registered successfully' });
   } catch (error) {
     console.error('Push token registration error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.patch('/profile', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.user!.userId;
+  const { firstName, lastName, address } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { customerProfile: true, artisanProfile: true },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    if (user.customerProfile) {
+      const updated = await prisma.customerProfile.update({
+        where: { userId },
+        data: {
+          ...(firstName ? { firstName } : {}),
+          ...(lastName ? { lastName } : {}),
+          ...(address !== undefined ? { address } : {}),
+        },
+      });
+      res.status(200).json({ message: 'Profile updated successfully', profile: updated });
+    } else if (user.artisanProfile) {
+      const updated = await prisma.artisanProfile.update({
+        where: { userId },
+        data: {
+          ...(firstName ? { firstName } : {}),
+          ...(lastName ? { lastName } : {}),
+        },
+      });
+      res.status(200).json({ message: 'Profile updated successfully', profile: updated });
+    } else {
+      res.status(400).json({ error: 'Profile not found' });
+    }
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

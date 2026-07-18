@@ -34,7 +34,7 @@ router.post('/paystack', async (req: Request, res: Response): Promise<void> => {
             id: updated.id,
             state: updated.state,
             paymentStatus: updated.paymentStatus,
-            price: updated.price,
+            price: updated.price ?? 0,
           });
         }
       }

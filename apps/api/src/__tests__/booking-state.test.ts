@@ -84,6 +84,39 @@ describe('Booking state machine', () => {
     ).toBe(true);
   });
 
+  it('allows artisan to transition to en-route from in-progress', () => {
+    expect(
+      isValidBookingTransition(Role.ARTISAN, artisanId, {
+        artisanId,
+        customerId,
+        state: BookingState.IN_PROGRESS,
+        paymentStatus: PaymentStatus.PAID,
+      }, BookingState.EN_ROUTE)
+    ).toBe(true);
+  });
+
+  it('allows artisan to transition to arrived from en-route', () => {
+    expect(
+      isValidBookingTransition(Role.ARTISAN, artisanId, {
+        artisanId,
+        customerId,
+        state: BookingState.EN_ROUTE,
+        paymentStatus: PaymentStatus.PAID,
+      }, BookingState.ARRIVED)
+    ).toBe(true);
+  });
+
+  it('allows artisan to complete from arrived', () => {
+    expect(
+      isValidBookingTransition(Role.ARTISAN, artisanId, {
+        artisanId,
+        customerId,
+        state: BookingState.ARRIVED,
+        paymentStatus: PaymentStatus.PAID,
+      }, BookingState.COMPLETED)
+    ).toBe(true);
+  });
+
   it('rejects customer reviewing before completion', () => {
     expect(
       isValidBookingTransition(Role.CUSTOMER, customerId, {

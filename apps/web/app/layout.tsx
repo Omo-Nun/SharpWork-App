@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 import { ConditionalAuth } from "../components/ConditionalAuth";
+import { Footer } from "../components/Footer";
 import { QueryProvider } from "../providers/QueryProvider";
 import "./globals.css";
 
@@ -43,12 +44,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${poppins.variable} antialiased`}>
+      <body className={`${poppins.variable} antialiased flex flex-col min-h-screen`}>
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-white focus:px-4 focus:py-2 focus:rounded-lg focus:shadow">
           Skip to main content
         </a>
         <QueryProvider>
-          <ConditionalAuth>{children}</ConditionalAuth>
+          <ConditionalAuth>
+            <main className="flex-grow">
+              {children}
+            </main>
+            <Footer />
+          </ConditionalAuth>
         </QueryProvider>
       </body>
     </html>

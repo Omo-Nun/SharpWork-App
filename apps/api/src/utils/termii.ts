@@ -43,3 +43,33 @@ export async function sendPasswordResetOtp(phoneNumber: string, otp: string): Pr
     return false;
   }
 }
+
+export async function sendVerificationOtp(phoneNumber: string, otp: string): Promise<boolean> {
+  const normalizedPhone = phoneNumber.replace(/\s+/g, '');
+
+  if (!process.env.TERMII_API_KEY) {
+    console.log(`[Termii Dev] verification OTP for ${normalizedPhone}: ${otp}`);
+    return true;
+  }
+
+  try {
+    const response = await termiiRequest('/sms/send', {
+      to: normalizedPhone,
+      from: TERMII_SENDER_ID,
+      sms: `Your SharpWork verification code is ${otp}. Valid for 10 minutes. Do not share this code.`,
+      type: 'plain',
+      channel: 'generic',
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error('[Termii] Send failed:', errorBody);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('[Termii] Send error:', error);
+    return false;
+  }
+}
