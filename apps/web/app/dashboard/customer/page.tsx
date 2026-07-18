@@ -35,7 +35,7 @@ export default function CustomerDashboard() {
 
         // Fetch bookings to extract transactions
         const bookings = await apiGet<any[]>('/bookings');
-        const paidBookings = bookings.filter((b: any) => b.paymentStatus === 'PAID');
+        const paidBookings = (Array.isArray(bookings) ? bookings : []).filter((b: any) => b.paymentStatus === 'PAID');
         setTransactions(paidBookings);
       } catch (err) {
         console.error('Failed to load profile data', err);

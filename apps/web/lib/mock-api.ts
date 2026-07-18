@@ -219,7 +219,7 @@ export async function handleMockApi(method: string, path: string, body?: any): P
     };
   }
 
-  if (method === 'GET' && basePath === '/booking') {
+  if (method === 'GET' && (basePath === '/booking' || basePath === '/bookings')) {
     return [
       {
         id: 'b1',
@@ -233,7 +233,7 @@ export async function handleMockApi(method: string, path: string, body?: any): P
     ];
   }
 
-  if (method === 'GET' && basePath.startsWith('/booking/')) {
+  if (method === 'GET' && (basePath.startsWith('/booking/') || basePath.startsWith('/bookings/'))) {
     return {
       id: basePath.split('/')[2],
       state: 'PENDING',
