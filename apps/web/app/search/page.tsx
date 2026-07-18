@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { OpenStreetMap } from '../../components/OpenStreetMap';
+import { GoogleMap } from '../../components/GoogleMap';
 import { fetchServiceCategories, searchArtisans } from '../../lib/marketplace';
 
 const DEFAULT_LAT = 6.5244;
@@ -92,7 +92,7 @@ function SearchContent() {
             </div>
 
             <div className="mb-8">
-              <OpenStreetMap lat={coords.lat} lng={coords.lng} className="h-56 w-full rounded-2xl shadow-sm" label="Your location" />
+              <GoogleMap lat={coords.lat} lng={coords.lng} className="h-56 w-full rounded-2xl shadow-sm" label="Your location" />
             </div>
 
             <div className="bg-white p-4 rounded-2xl border shadow-sm mb-8 grid grid-cols-1 md:grid-cols-4 gap-3">

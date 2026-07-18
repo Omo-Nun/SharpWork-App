@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,11 @@ import {
   SafeAreaView,
   Alert,
 } from 'react-native';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
 
 const BRAND = {
   green: '#007A52',
@@ -87,8 +92,23 @@ function JobRequestCard({ service, customer, location, amount, onAccept, onDecli
 }
 
 export default function ArtisanDashboard() {
+  const { user, token } = useAuth();
+  const { socket, isConnected } = useSocket();
   const [isOnline, setIsOnline] = useState(true);
-  const [hasRequest, setHasRequest] = useState(true);
+  const [incomingRequest, setIncomingRequest] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (!socket || !isOnline) return;
+
+    const handleNewBooking = (booking: any) => {
+      setIncomingRequest(booking);
+    };
+
+    socket.on('booking:created', handleNewBooking);
+    return () => {
+      socket.off('booking:created', handleNewBooking);
+    };
+  }, [socket, isOnline]);
 
   const handleToggleOnline = (val: boolean) => {
     setIsOnline(val);
@@ -98,14 +118,24 @@ export default function ArtisanDashboard() {
     );
   };
 
-  const handleAccept = () => {
-    Alert.alert('Job Accepted!', 'The customer has been notified. Head to the location.');
-    setHasRequest(false);
+  const handleAccept = async () => {
+    if (!incomingRequest || !token) return;
+    try {
+      await axios.patch(
+        `${API_URL}/api/booking/${incomingRequest.id}/state`,
+        { state: 'ACCEPTED' },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      Alert.alert('Job Accepted!', 'The customer has been notified. Head to the location.');
+      setIncomingRequest(null);
+    } catch {
+      Alert.alert('Error', 'Failed to accept job.');
+    }
   };
 
   const handleDecline = () => {
     Alert.alert('Job Declined', 'The request has been removed.');
-    setHasRequest(false);
+    setIncomingRequest(null);
   };
 
   return (
@@ -136,7 +166,7 @@ export default function ArtisanDashboard() {
         </View>
 
         {/* Incoming Request Alert */}
-        {isOnline && hasRequest && (
+        {isOnline && incomingRequest && (
           <View style={styles.alertBanner}>
             <Text style={styles.alertIcon}>🔔</Text>
             <Text style={styles.alertText}>New job request nearby!</Text>
@@ -167,12 +197,12 @@ export default function ArtisanDashboard() {
         {/* Incoming Requests */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Incoming Requests</Text>
-          {isOnline && hasRequest ? (
+          {isOnline && incomingRequest ? (
             <JobRequestCard
-              service="Leaky Faucet Repair"
-              customer="Samuel K."
-              location="2.4 km away — Lekki Phase 1"
-              amount="₦15,000"
+              service={incomingRequest.description || "Requested Service"}
+              customer="Customer"
+              location="Customer Location"
+              amount={`₦${incomingRequest.price?.toLocaleString()}`}
               onAccept={handleAccept}
               onDecline={handleDecline}
             />
@@ -180,7 +210,7 @@ export default function ArtisanDashboard() {
             <View style={styles.emptyRequests}>
               <Text style={styles.emptyIcon}>{isOnline ? '⏳' : '🔴'}</Text>
               <Text style={styles.emptyText}>
-                {isOnline ? 'Waiting for new requests...' : 'Go online to receive job requests.'}
+                {isOnline ? (isConnected ? 'Waiting for new requests...' : 'Connecting to live dispatch...') : 'Go online to receive job requests.'}
               </Text>
             </View>
           )}

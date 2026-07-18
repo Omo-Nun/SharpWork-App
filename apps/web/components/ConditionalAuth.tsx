@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { AuthProvider } from '../context/AuthContext';
+import { SocketProvider } from '../context/SocketContext';
 
 const PUBLIC_EXACT = new Set(['/', '/search', '/services']);
 
@@ -17,5 +18,9 @@ export function ConditionalAuth({ children }: { children: ReactNode }) {
   if (isPublicPath(pathname)) {
     return <>{children}</>;
   }
-  return <AuthProvider>{children}</AuthProvider>;
+  return (
+    <AuthProvider>
+      <SocketProvider>{children}</SocketProvider>
+    </AuthProvider>
+  );
 }

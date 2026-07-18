@@ -1,15 +1,16 @@
-import { Resend } from 'resend';
+import sgMail from '@sendgrid/mail';
 import { getWebAppUrl } from '../config/env';
 
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@sharpwork.com';
-let resendClient: Resend | null = null;
+const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || 'noreply@sharpwork.com';
+let isSendGridConfigured = false;
 
-function getResendClient(): Resend | null {
-  if (resendClient) return resendClient;
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return null;
-  resendClient = new Resend(apiKey);
-  return resendClient;
+function configureSendGrid(): boolean {
+  if (isSendGridConfigured) return true;
+  const apiKey = process.env.SENDGRID_API_KEY;
+  if (!apiKey) return false;
+  sgMail.setApiKey(apiKey);
+  isSendGridConfigured = true;
+  return true;
 }
 
 export async function sendVerificationEmail(
@@ -36,14 +37,14 @@ export async function sendVerificationEmail(
   `;
   const text = `Hi ${firstName},\n\nVerify your SharpWork account: ${verifyUrl}\n\nThis link expires in 24 hours.`;
 
-  const client = getResendClient();
-  if (!client) {
+  const isConfigured = configureSendGrid();
+  if (!isConfigured) {
     console.log(`[Email Dev] Verification email for ${to}`);
     console.log(`[Email Dev] Verify URL: ${verifyUrl}`);
     return;
   }
 
-  await client.emails.send({
+  await sgMail.send({
     to,
     from: FROM_EMAIL,
     subject,
@@ -51,3 +52,4 @@ export async function sendVerificationEmail(
     text,
   });
 }
+

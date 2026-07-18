@@ -6,6 +6,8 @@ import Constants from 'expo-constants';
 import axios from 'axios';
 import { getAccessToken } from './src/utils/secureStore';
 import AppNavigator from './src/navigation/AppNavigator';
+import { AuthProvider } from './src/context/AuthContext';
+import { SocketProvider } from './src/context/SocketContext';
 
 const LOCATION_TASK_NAME = 'background-location-task';
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
@@ -86,5 +88,11 @@ export default function App() {
     })();
   }, []);
 
-  return <AppNavigator />;
+  return (
+    <AuthProvider>
+      <SocketProvider>
+        <AppNavigator />
+      </SocketProvider>
+    </AuthProvider>
+  );
 }

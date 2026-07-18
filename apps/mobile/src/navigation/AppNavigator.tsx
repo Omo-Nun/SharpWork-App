@@ -1,22 +1,59 @@
 import React from 'react';
+import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { View, Text, TouchableOpacity } from 'react-native';
 
-// Screens
+// Auth screens
+import LoginScreen from '../screens/auth/LoginScreen';
+import RegisterScreen from '../screens/auth/RegisterScreen';
+import OTPScreen from '../screens/auth/OTPScreen';
+
+// App screens
 import CustomerDashboardScreen from '../screens/CustomerDashboard';
 import ArtisanDashboardScreen from '../screens/ArtisanDashboard';
 import VerificationFlowScreen from '../screens/VerificationFlow';
+import ProfileScreen from '../screens/ProfileScreen';
+import ChatScreen from '../screens/ChatScreen';
+import BookingScreen from '../screens/BookingScreen';
 
-// --- Tab Icon Component ---
+// Auth context
+import { useAuth } from '../context/AuthContext';
+
+// ─── Navigator param list types ───────────────────────────────────────────────
+
+export type AuthStackParamList = {
+  Login: undefined;
+  Register: undefined;
+  OTP: { phoneNumber: string; email: string };
+};
+
+export type CustomerStackParamList = {
+  CustomerHome: undefined;
+  Profile: undefined;
+  Booking: { artisanId: string; artisanName: string; categorySlug?: string };
+  Chat: { bookingId: string; otherPersonName: string; otherPersonId: string };
+};
+
+export type ArtisanStackParamList = {
+  ArtisanHome: undefined;
+  Verify: undefined;
+  ArtisanProfile: undefined;
+  Chat: { bookingId: string; otherPersonName: string; otherPersonId: string };
+};
+
+// ─── Stacks & Tabs ────────────────────────────────────────────────────────────
+
+const AuthStack = createNativeStackNavigator<AuthStackParamList>();
+const CustomerStack = createNativeStackNavigator<CustomerStackParamList>();
+const ArtisanStack = createNativeStackNavigator<ArtisanStackParamList>();
+const Tab = createBottomTabNavigator();
+
+// ─── Tab Icon ─────────────────────────────────────────────────────────────────
+
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
   const icons: Record<string, string> = {
-    Home: '🏠',
-    Jobs: '📋',
-    Earnings: '💰',
-    Profile: '👤',
-    Verify: '✅',
+    Home: '🏠', Jobs: '📋', Earnings: '💰', Profile: '👤', Verify: '✅',
   };
   return (
     <View style={{ alignItems: 'center' }}>
@@ -28,10 +65,20 @@ function TabIcon({ name, focused }: { name: string; focused: boolean }) {
   );
 }
 
-const Tab = createBottomTabNavigator();
-const Stack = createNativeStackNavigator();
+// ─── Auth Navigator ──────────────────────────────────────────────────────────
 
-// --- Customer Tab Navigator ---
+function AuthNavigator() {
+  return (
+    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+      <AuthStack.Screen name="Login" component={LoginScreen} />
+      <AuthStack.Screen name="Register" component={RegisterScreen} />
+      <AuthStack.Screen name="OTP" component={OTPScreen} />
+    </AuthStack.Navigator>
+  );
+}
+
+// ─── Customer Stack (with tab navigator inside) ───────────────────────────────
+
 function CustomerTabs() {
   return (
     <Tab.Navigator
@@ -58,20 +105,52 @@ function CustomerTabs() {
         options={{ tabBarIcon: ({ focused }) => <TabIcon name="Home" focused={focused} /> }}
       />
       <Tab.Screen
-        name="Verify"
-        component={VerificationFlowScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon name="Verify" focused={focused} /> }}
-      />
-      <Tab.Screen
-        name="Profile"
-        component={CustomerDashboardScreen}
+        name="CustomerProfile"
+        component={CustomerProfileWrapper}
         options={{ tabBarIcon: ({ focused }) => <TabIcon name="Profile" focused={focused} /> }}
       />
     </Tab.Navigator>
   );
 }
 
-// --- Artisan Tab Navigator ---
+function CustomerProfileWrapper() {
+  return <ProfileScreen />;
+}
+
+function CustomerNavigator() {
+  return (
+    <CustomerStack.Navigator screenOptions={{ headerShown: false }}>
+      <CustomerStack.Screen name="CustomerHome" component={CustomerTabs} />
+      <CustomerStack.Screen
+        name="Booking"
+        component={({ route, navigation }: any) => (
+          <BookingScreen
+            artisanId={route.params.artisanId}
+            artisanName={route.params.artisanName}
+            categorySlug={route.params.categorySlug}
+            onSuccess={() => navigation.goBack()}
+            onCancel={() => navigation.goBack()}
+          />
+        )}
+      />
+      <CustomerStack.Screen
+        name="Chat"
+        component={({ route, navigation }: any) => (
+          <ChatScreen
+            bookingId={route.params.bookingId}
+            otherPersonName={route.params.otherPersonName}
+            otherPersonId={route.params.otherPersonId}
+            onBack={() => navigation.goBack()}
+          />
+        )}
+      />
+      <CustomerStack.Screen name="Profile" component={CustomerProfileWrapper} />
+    </CustomerStack.Navigator>
+  );
+}
+
+// ─── Artisan Stack ────────────────────────────────────────────────────────────
+
 function ArtisanTabs() {
   return (
     <Tab.Navigator
@@ -104,25 +183,64 @@ function ArtisanTabs() {
         options={{ tabBarIcon: ({ focused }) => <TabIcon name="Earnings" focused={focused} /> }}
       />
       <Tab.Screen
-        name="ArtisanProfile"
-        component={ArtisanDashboardScreen}
+        name="ArtisanProfileTab"
+        component={ArtisanProfileWrapper}
         options={{ tabBarIcon: ({ focused }) => <TabIcon name="Profile" focused={focused} /> }}
       />
     </Tab.Navigator>
   );
 }
 
-// --- Root Navigator ---
-// In production, this would read the user role from SecureStore/auth state
-// and render either CustomerTabs or ArtisanTabs
+function ArtisanProfileWrapper() {
+  return <ProfileScreen />;
+}
+
+function ArtisanNavigator() {
+  return (
+    <ArtisanStack.Navigator screenOptions={{ headerShown: false }}>
+      <ArtisanStack.Screen name="ArtisanHome" component={ArtisanTabs} />
+      <ArtisanStack.Screen name="Verify" component={VerificationFlowScreen} />
+      <ArtisanStack.Screen
+        name="Chat"
+        component={({ route, navigation }: any) => (
+          <ChatScreen
+            bookingId={route.params.bookingId}
+            otherPersonName={route.params.otherPersonName}
+            otherPersonId={route.params.otherPersonId}
+            onBack={() => navigation.goBack()}
+          />
+        )}
+      />
+      <ArtisanStack.Screen name="ArtisanProfile" component={ArtisanProfileWrapper} />
+    </ArtisanStack.Navigator>
+  );
+}
+
+// ─── Root Navigator — Auth-aware ──────────────────────────────────────────────
+
 export default function AppNavigator() {
+  const { isAuthenticated, isLoading, user } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#0D2B5E', alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: '#007A52', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+          <Text style={{ fontSize: 32, fontWeight: '900', color: '#fff' }}>S</Text>
+        </View>
+        <ActivityIndicator color="#007A52" size="large" />
+      </View>
+    );
+  }
+
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {/* Default to Customer view for now — role-based routing wired to auth state */}
-        <Stack.Screen name="CustomerApp" component={CustomerTabs} />
-        <Stack.Screen name="ArtisanApp" component={ArtisanTabs} />
-      </Stack.Navigator>
+      {!isAuthenticated ? (
+        <AuthNavigator />
+      ) : user?.role === 'ARTISAN' ? (
+        <ArtisanNavigator />
+      ) : (
+        <CustomerNavigator />
+      )}
     </NavigationContainer>
   );
 }
