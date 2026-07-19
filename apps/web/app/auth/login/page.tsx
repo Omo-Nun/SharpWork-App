@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { FormEvent, Suspense, useEffect, useState } from 'react';
 import { apiGet, apiPost, ApiError } from '../../../lib/api';
 import { AuthUser, getDashboardPath, useAuth } from '../../../context/AuthContext';
+import { Logo } from '../../../components/Logo';
 
 function LoginForm() {
   const router = useRouter();
@@ -106,14 +107,19 @@ function LoginForm() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
-      <div className="w-full max-w-md bg-white p-8 rounded-3xl shadow-xl border border-gray-100">
-        <div className="text-center mb-8">
-          <Link href="/" className="text-3xl font-black text-brand-green tracking-tighter hover:opacity-80 transition-opacity">
-            SharpWork
+    <main className="min-h-screen flex items-center justify-center bg-gray-50/50 p-6 relative overflow-hidden">
+      {/* Premium Background Elements */}
+      <div className="absolute top-0 w-full h-[400px] bg-gradient-to-b from-brand-navy/[0.03] to-transparent -z-10" />
+      <div className="absolute -top-[20%] -right-[10%] w-[50%] h-[50%] rounded-full bg-[#1ECE25]/5 blur-[120px] -z-10" />
+      <div className="absolute bottom-[10%] -left-[10%] w-[40%] h-[40%] rounded-full bg-brand-navy/5 blur-[120px] -z-10" />
+
+      <div className="w-full max-w-[420px] bg-white p-10 rounded-[2rem] shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] border border-gray-100/80">
+        <div className="flex flex-col items-center text-center mb-10">
+          <Link href="/" className="mb-8 hover:scale-105 transition-transform duration-300">
+            <Logo height={28} />
           </Link>
-          <h1 className="text-2xl font-bold mt-6">Welcome Back</h1>
-          <p className="text-gray-500 mt-2">Log in to your account</p>
+          <h1 className="text-[28px] font-black tracking-tight text-brand-navy">Welcome Back</h1>
+          <p className="text-gray-500 font-medium mt-1">Log in to your account</p>
         </div>
 
         {error && (
@@ -122,13 +128,13 @@ function LoginForm() {
           </div>
         )}
 
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
+        <form className="space-y-5" onSubmit={handleSubmit}>
+          <div className="flex bg-gray-50/80 p-1.5 rounded-2xl mb-6 border border-gray-100">
             <button
               type="button"
               onClick={() => { setAuthMethod('email'); setIdentifier(''); setOtpSent(false); setOtp(''); setDevOtp(''); }}
-              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
-                authMethod === 'email' ? 'bg-white text-brand-green shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              className={`flex-1 py-2.5 text-sm font-bold rounded-xl transition-all duration-300 ${
+                authMethod === 'email' ? 'bg-white text-brand-navy shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100/50'
               }`}
             >
               Email
@@ -136,8 +142,8 @@ function LoginForm() {
             <button
               type="button"
               onClick={() => { setAuthMethod('phone'); setIdentifier(''); setOtpSent(false); setOtp(''); setDevOtp(''); }}
-              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
-                authMethod === 'phone' ? 'bg-white text-brand-green shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              className={`flex-1 py-2.5 text-sm font-bold rounded-xl transition-all duration-300 ${
+                authMethod === 'phone' ? 'bg-white text-brand-navy shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100/50'
               }`}
             >
               Phone Number
@@ -151,7 +157,7 @@ function LoginForm() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
               {authMethod === 'email' ? 'Email Address' : 'Phone Number'}
             </label>
             <input
@@ -162,13 +168,18 @@ function LoginForm() {
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               placeholder={authMethod === 'email' ? 'you@example.com' : '+234 800 000 0000'}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent transition-all disabled:opacity-60 disabled:bg-gray-50"
+              className="w-full px-4 py-3.5 bg-gray-50/50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1ECE25]/50 focus:border-[#1ECE25] focus:bg-white transition-all disabled:opacity-60 disabled:bg-gray-100 text-brand-navy font-medium placeholder:font-normal"
             />
           </div>
 
           {authMethod === 'email' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Password</label>
+                <Link href="/auth/forgot-password" className="text-xs font-bold text-gray-400 hover:text-[#1ECE25] transition-colors">
+                  Forgot?
+                </Link>
+              </div>
               <input
                 type="password"
                 required
@@ -176,48 +187,40 @@ function LoginForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent transition-all"
+                className="w-full px-4 py-3.5 bg-gray-50/50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1ECE25]/50 focus:border-[#1ECE25] focus:bg-white transition-all text-brand-navy font-medium placeholder:font-normal"
               />
             </div>
           )}
 
           {authMethod === 'phone' && otpSent && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Verification Code (OTP)</label>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Verification Code (OTP)</label>
               <input
                 type="text"
                 required
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
                 placeholder="Enter 6-digit code"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent transition-all text-center tracking-widest font-mono text-lg"
+                className="w-full px-4 py-3.5 bg-gray-50/50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1ECE25]/50 focus:border-[#1ECE25] focus:bg-white transition-all text-center tracking-widest font-mono text-xl text-brand-navy placeholder:text-gray-300"
                 maxLength={6}
               />
-            </div>
-          )}
-
-          {authMethod === 'email' && (
-            <div className="flex justify-end">
-              <Link href="/auth/forgot-password" className="text-sm font-medium text-brand-green hover:underline">
-                Forgot Password?
-              </Link>
             </div>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-brand-green text-white py-3.5 rounded-xl font-bold text-lg hover:bg-green-700 hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full bg-[#1ECE25] text-white py-4 rounded-xl font-bold text-[15px] hover:bg-[#1bb822] hover:shadow-[0_8px_20px_rgb(30,206,37,0.25)] transition-all active:scale-[0.98] mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {loading ? 'Processing...' : (authMethod === 'phone' ? (otpSent ? 'Verify & Log In' : 'Request OTP') : 'Log In')}
           </button>
         </form>
 
-        <div className="mt-8 text-center text-gray-500">
+        <div className="mt-8 text-center text-sm font-medium text-gray-500">
           Don&apos;t have an account?{' '}
           <Link
             href={`/auth/register${searchParams.get('next') ? `?next=${encodeURIComponent(searchParams.get('next')!)}&role=customer` : ''}`}
-            className="text-brand-green font-bold hover:underline"
+            className="text-brand-navy font-black hover:text-[#1ECE25] transition-colors"
           >
             Sign Up
           </Link>

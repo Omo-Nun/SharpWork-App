@@ -6,7 +6,7 @@
   --color-brand-orange: #F56500;
   --color-brand-white: #FFFFFF;
   --color-brand-black: #000000;
-  --font-sans: var(--font-poppins), sans-serif;
+  --font-sans: var(--font-inter), sans-serif;
 }
 
 @layer base {

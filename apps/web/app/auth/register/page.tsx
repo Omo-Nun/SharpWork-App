@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FormEvent, Suspense, useState } from 'react';
 import { apiPost, ApiError } from '../../../lib/api';
+import { Logo } from '../../../components/Logo';
 
 type Role = 'CUSTOMER' | 'ARTISAN';
 
@@ -60,41 +61,41 @@ function RegisterForm() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50 p-6 py-12">
-      <div className="w-full max-w-lg bg-white p-8 rounded-3xl shadow-xl border border-gray-100 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-brand-green/10 rounded-bl-full -z-10 blur-xl"></div>
-        <div className="absolute bottom-0 left-0 w-32 h-32 bg-brand-orange/10 rounded-tr-full -z-10 blur-xl"></div>
+    <main className="min-h-screen flex items-center justify-center bg-gray-50/50 p-6 py-12 relative overflow-hidden">
+      {/* Premium Background Elements */}
+      <div className="absolute top-0 w-full h-[400px] bg-gradient-to-b from-brand-navy/[0.03] to-transparent -z-10" />
+      <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-[#1ECE25]/5 rounded-bl-full -z-10 blur-[120px]"></div>
+      <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-brand-navy/5 rounded-tr-full -z-10 blur-[120px]"></div>
 
-        <div className="text-center mb-8">
-          <Link href="/" className="text-3xl font-black text-brand-green tracking-tighter hover:opacity-80 transition-opacity">
-            SharpWork
+      <div className="w-full max-w-[480px] bg-white p-10 rounded-[2rem] shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] border border-gray-100/80 relative">
+        <div className="flex flex-col items-center text-center mb-10">
+          <Link href="/" className="mb-8 hover:scale-105 transition-transform duration-300">
+            <Logo height={28} />
           </Link>
-          <h1 className="text-2xl font-bold mt-6 text-brand-navy">Create an Account</h1>
-          <p className="text-gray-500 mt-2">Join the ultimate artisan marketplace</p>
+          <h1 className="text-[28px] font-black tracking-tight text-brand-navy">Create an Account</h1>
+          <p className="text-gray-500 font-medium mt-1">Join the ultimate artisan marketplace</p>
         </div>
 
-        <div className="flex gap-4 mb-8">
+        {/* Artisan/Customer Toggle (Segmented Control style) */}
+        <div className="flex bg-gray-50/80 p-1.5 rounded-2xl mb-8 border border-gray-100 relative">
+          <div className="absolute inset-y-1.5 w-[calc(50%-6px)] bg-white rounded-xl shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)] transition-all duration-300 ease-out" style={{ left: role === 'CUSTOMER' ? '6px' : 'calc(50%)' }} />
           <button
             type="button"
             onClick={() => setRole('CUSTOMER')}
-            className={`flex-1 py-3 px-4 rounded-xl border-2 font-bold transition-all ${
-              role === 'CUSTOMER'
-                ? 'border-brand-green bg-brand-green/5 text-brand-green'
-                : 'border-gray-200 text-gray-500 hover:border-gray-300'
+            className={`flex-1 py-2.5 text-sm font-bold rounded-xl transition-colors duration-300 relative z-10 ${
+              role === 'CUSTOMER' ? 'text-brand-navy' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            I am a Customer
+            I'm a Customer
           </button>
           <button
             type="button"
             onClick={() => setRole('ARTISAN')}
-            className={`flex-1 py-3 px-4 rounded-xl border-2 font-bold transition-all ${
-              role === 'ARTISAN'
-                ? 'border-brand-green bg-brand-green/5 text-brand-green'
-                : 'border-gray-200 text-gray-500 hover:border-gray-300'
+            className={`flex-1 py-2.5 text-sm font-bold rounded-xl transition-colors duration-300 relative z-10 ${
+              role === 'ARTISAN' ? 'text-brand-navy' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            I am an Artisan
+            I'm an Artisan
           </button>
         </div>
 
@@ -107,35 +108,35 @@ function RegisterForm() {
         <form className="space-y-5" onSubmit={handleSubmit}>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">First Name</label>
               <input
                 type="text"
                 required
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 placeholder="John"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent transition-all"
+                className="w-full px-4 py-3.5 bg-gray-50/50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1ECE25]/50 focus:border-[#1ECE25] focus:bg-white transition-all text-brand-navy font-medium placeholder:font-normal"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Last Name</label>
               <input
                 type="text"
                 required
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 placeholder="Doe"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent transition-all"
+                className="w-full px-4 py-3.5 bg-gray-50/50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1ECE25]/50 focus:border-[#1ECE25] focus:bg-white transition-all text-brand-navy font-medium placeholder:font-normal"
               />
             </div>
           </div>
 
-          <div className="flex bg-gray-100 p-1 rounded-xl mb-4">
+          <div className="flex bg-gray-50/80 p-1.5 rounded-2xl mb-4 border border-gray-100">
             <button
               type="button"
               onClick={() => { setAuthMethod('email'); setIdentifier(''); }}
-              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
-                authMethod === 'email' ? 'bg-white text-brand-green shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all duration-300 ${
+                authMethod === 'email' ? 'bg-white text-brand-navy shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100/50'
               }`}
             >
               Use Email
@@ -143,8 +144,8 @@ function RegisterForm() {
             <button
               type="button"
               onClick={() => { setAuthMethod('phone'); setIdentifier(''); }}
-              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
-                authMethod === 'phone' ? 'bg-white text-brand-green shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all duration-300 ${
+                authMethod === 'phone' ? 'bg-white text-brand-navy shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100/50'
               }`}
             >
               Use Phone Number
@@ -152,7 +153,7 @@ function RegisterForm() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
               {authMethod === 'email' ? 'Email Address' : 'Phone Number'}
             </label>
             <input
@@ -162,12 +163,12 @@ function RegisterForm() {
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               placeholder={authMethod === 'email' ? 'you@example.com' : '+234 800 000 0000'}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent transition-all"
+              className="w-full px-4 py-3.5 bg-gray-50/50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1ECE25]/50 focus:border-[#1ECE25] focus:bg-white transition-all text-brand-navy font-medium placeholder:font-normal"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Password</label>
             <input
               type="password"
               required
@@ -176,28 +177,28 @@ function RegisterForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="At least 8 characters"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent transition-all"
+              className="w-full px-4 py-3.5 bg-gray-50/50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1ECE25]/50 focus:border-[#1ECE25] focus:bg-white transition-all text-brand-navy font-medium placeholder:font-normal"
             />
           </div>
 
-          <p className="text-sm text-gray-500">
+          <p className="text-xs text-gray-400 font-medium">
             We will send a verification code to your {authMethod === 'email' ? 'email' : 'phone number'} before you can log in.
           </p>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-brand-green text-white py-3.5 rounded-xl font-bold text-lg hover:bg-green-700 hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95 mt-4 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full bg-[#1ECE25] text-white py-4 rounded-xl font-bold text-[15px] hover:bg-[#1bb822] hover:shadow-[0_8px_20px_rgb(30,206,37,0.25)] transition-all active:scale-[0.98] mt-4 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {loading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
 
-        <div className="mt-8 text-center text-gray-500">
+        <div className="mt-8 text-center text-sm font-medium text-gray-500">
           Already have an account?{' '}
           <Link
             href={`/auth/login${nextParam ? `?next=${encodeURIComponent(nextParam)}` : ''}`}
-            className="text-brand-green font-bold hover:underline"
+            className="text-brand-navy font-black hover:text-[#1ECE25] transition-colors"
           >
             Log In
           </Link>

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Mail } from 'lucide-react';
+import { Logo } from './Logo';
 
 const FacebookIcon = ({ size = 24, className = '' }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -25,7 +26,7 @@ export function Footer() {
           
           {/* Brand & Intro */}
           <div className="flex flex-col gap-4">
-            <h2 className="text-2xl font-bold text-white tracking-tight">SharpWork</h2>
+            <Link href="/" className="inline-block"><Logo height={28} textClassName="text-white" /></Link>
             <p className="text-sm text-gray-400 leading-relaxed max-w-sm">
               Connect with verified artisans in Nigeria for plumbing, electrical, cleaning, and home repairs. Secure escrow payments until the job is done right.
             </p>
