@@ -8,7 +8,7 @@ NPM_CONFIG_PRODUCTION = "false"
 nixPkgs = ["nodejs_20", "python3", "gcc"]
 
 [phases.install]
-cmds = ["npm ci"]
+cmds = ["rm package-lock.json", "npm install"]
 
 [start]
 cmd = "npm run railway:start"

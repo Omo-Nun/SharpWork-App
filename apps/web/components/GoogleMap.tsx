@@ -12,7 +12,7 @@ interface GoogleMapProps {
 
 declare global {
   interface Window {
-    google: typeof google;
+    google: any;
     __gmapCallback?: () => void;
   }
 }
@@ -48,7 +48,7 @@ function loadGoogleMaps(apiKey: string): Promise<void> {
 
 export function GoogleMap({ lat, lng, label, className, markers = [] }: GoogleMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<google.maps.Map | null>(null);
+  const mapRef = useRef<any>(null);
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
 
   useEffect(() => {
