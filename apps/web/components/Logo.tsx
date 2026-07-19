@@ -11,11 +11,11 @@ interface LogoProps {
 
 export function Logo({ className = '', width = 180, height = 32, textClassName = 'text-brand-navy', hideText = false }: LogoProps) {
   return (
-    <div className={`flex items-center gap-1.5 ${className}`}>
+    <div className={`flex items-center gap-0.5 ${className}`}>
       <svg 
-        width={hideText ? width : height * 1.25} 
+        width={hideText ? width : height * 1.05} 
         height={height} 
-        viewBox="0 0 50 40" 
+        viewBox="0 0 42 40" 
         fill="none" 
         xmlns="http://www.w3.org/2000/svg"
         className="flex-shrink-0"
