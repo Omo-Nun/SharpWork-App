@@ -61,7 +61,7 @@ export default function ArtisanDashboard() {
   const monthlyTotal = stats?.monthlyEarnings.reduce((sum, m) => sum + m.amount, 0) ?? 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 relative overflow-hidden">
+    <div className="min-h-screen bg-gray-50/50 relative overflow-hidden md:pl-64">
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-brand-green/5 rounded-full blur-[120px] pointer-events-none" />
 
       <DashboardNav variant="artisan" />

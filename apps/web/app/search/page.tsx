@@ -130,7 +130,7 @@ function ArtisanCard({ artisan, selectedCategories, index }: { artisan: SearchAr
         </Link>
         <Link
           href={`/artisan/${artisan.userId}/profile`}
-          className="flex-1 text-center bg-[#1ECE25] text-white py-2.5 rounded-2xl font-bold text-sm hover:bg-[#1bb822] transition-all duration-200 shadow-[0_4px_12px_rgba(30,206,37,0.25)] hover:shadow-[0_6px_20px_rgba(30,206,37,0.35)] hover:-translate-y-0.5"
+          className="flex-1 text-center bg-[#1ECE25] text-white py-2.5 rounded-2xl font-bold text-sm hover:bg-[#1bb822] transition-all duration-200 shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] hover:-translate-y-0.5"
         >
           Request Service
         </Link>
@@ -235,7 +235,7 @@ function SearchContent() {
                 onClick={() => setRadiusKm(r)}
                 className={`py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
                   radiusKm === r
-                    ? 'bg-[#1ECE25] text-white shadow-[0_4px_12px_rgba(30,206,37,0.3)]'
+                    ? 'bg-[#1ECE25] text-white shadow-[0_4px_12px_rgba(0,0,0,0.15)]'
                     : 'bg-gray-50 text-gray-500 hover:bg-gray-100 border border-gray-100'
                 }`}
               >
@@ -383,7 +383,7 @@ function SearchContent() {
 
             <Link
               href="/services"
-              className="mt-8 inline-flex items-center gap-2 bg-[#1ECE25] text-white px-8 py-3.5 rounded-2xl font-bold text-sm hover:bg-[#1bb822] transition-all shadow-[0_4px_20px_rgba(30,206,37,0.3)] hover:-translate-y-0.5"
+              className="mt-8 inline-flex items-center gap-2 bg-[#1ECE25] text-white px-8 py-3.5 rounded-2xl font-bold text-sm hover:bg-[#1bb822] transition-all shadow-[0_4px_20px_rgba(0,0,0,0.1)] hover:-translate-y-0.5"
             >
               Browse All Services <span className="text-base">→</span>
             </Link>
@@ -461,7 +461,7 @@ function SearchContent() {
                   <button
                     type="button"
                     onClick={() => setRadiusKm(50)}
-                    className="bg-[#1ECE25] text-white px-8 py-3 rounded-2xl font-bold text-sm hover:bg-[#1bb822] transition-all shadow-[0_4px_12px_rgba(30,206,37,0.3)] hover:-translate-y-0.5"
+                    className="bg-[#1ECE25] text-white px-8 py-3 rounded-2xl font-bold text-sm hover:bg-[#1bb822] transition-all shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:-translate-y-0.5"
                   >
                     Expand to 50 km →
                   </button>

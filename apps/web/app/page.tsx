@@ -1,8 +1,14 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
+import { useState } from 'react';
 import { Logo } from '../components/Logo';
+import { Menu, X } from 'lucide-react';
 
 export default function LandingPage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <main id="main-content" className="min-h-screen bg-gray-50 overflow-hidden font-sans">
       {/* Navbar with Glassmorphism */}
@@ -24,19 +30,38 @@ export default function LandingPage() {
               placeholder="Enter a service (e.g., Plumber, Carpenter)" 
               className="flex-1 px-4 py-2.5 text-sm text-gray-800 bg-transparent focus:outline-none w-full"
             />
-            <button type="submit" className="bg-brand-green hover:bg-emerald-500 text-white px-6 py-2.5 font-bold text-sm transition-colors h-full whitespace-nowrap">
+            <button type="submit" className="bg-[#1ECE25] hover:bg-[#1bb822] text-white px-6 py-2.5 font-bold text-sm transition-colors h-full whitespace-nowrap">
               Search
             </button>
           </form>
 
-          <nav className="space-x-4 lg:space-x-6 flex items-center whitespace-nowrap">
-            <Link href="/services" className="font-medium text-gray-600 hover:text-brand-green transition-colors hidden lg:block">Services</Link>
-            <Link href="/search" className="font-medium text-gray-600 hover:text-brand-green transition-colors hidden lg:block">Find Artisans</Link>
-            <div className="h-6 w-px bg-gray-200 hidden lg:block mx-1" />
-            <Link href="/auth/login" className="font-medium text-gray-700 hover:text-brand-green transition-colors hidden sm:block">Log In</Link>
-            <Link href="/auth/register" className="bg-brand-navy text-white px-5 lg:px-6 py-2 lg:py-2.5 rounded-full font-bold hover:bg-gray-800 transition-all hover:shadow-lg transform hover:-translate-y-0.5 text-sm lg:text-base">Sign Up</Link>
+          <nav className="hidden lg:flex items-center space-x-6 whitespace-nowrap">
+            <Link href="/services" className="font-medium text-gray-600 hover:text-brand-green transition-colors">Services</Link>
+            <Link href="/search" className="font-medium text-gray-600 hover:text-brand-green transition-colors">Find Artisans</Link>
+            <div className="h-6 w-px bg-gray-200 mx-1" />
+            <Link href="/auth/login" className="font-medium text-gray-700 hover:text-brand-green transition-colors">Log In</Link>
+            <Link href="/auth/register" className="bg-brand-navy text-white px-6 py-2.5 rounded-full font-bold hover:bg-gray-800 transition-all hover:shadow-lg transform hover:-translate-y-0.5">Sign Up</Link>
           </nav>
+
+          <button
+            type="button"
+            className="lg:hidden p-2 text-gray-600 hover:text-brand-green focus:outline-none"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
+
+        {/* Mobile Nav Dropdown */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden absolute top-full left-0 w-full bg-white border-b border-gray-100 shadow-xl py-4 px-6 flex flex-col gap-4 animate-fade-in-up origin-top">
+            <Link href="/services" onClick={() => setMobileMenuOpen(false)} className="font-bold text-gray-700 hover:text-brand-green text-lg py-2">Services</Link>
+            <Link href="/search" onClick={() => setMobileMenuOpen(false)} className="font-bold text-gray-700 hover:text-brand-green text-lg py-2">Find Artisans</Link>
+            <hr className="border-gray-100" />
+            <Link href="/auth/login" onClick={() => setMobileMenuOpen(false)} className="font-bold text-gray-700 hover:text-brand-green text-lg py-2">Log In</Link>
+            <Link href="/auth/register" onClick={() => setMobileMenuOpen(false)} className="bg-[#1ECE25] text-white px-6 py-3 rounded-xl font-bold text-center text-lg mt-2">Sign Up</Link>
+          </div>
+        )}
       </header>
 
       {/* Hero Section */}
@@ -59,7 +84,7 @@ export default function LandingPage() {
         {/* Background decorative blobs */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 mix-blend-multiply">
           <div className="absolute -top-[10%] -right-[10%] w-[60%] h-[60%] rounded-full bg-[#1ECE25]/10 blur-[120px] animate-pulse" style={{ animationDuration: '8s' }} />
-          <div className="absolute top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-[#0D2B5E]/5 blur-[120px] animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }} />
+          <div className="absolute top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-blue-500/5 blur-[120px] animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }} />
         </div>
 
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
@@ -84,7 +109,7 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-6">
               <Link
                 href="/search"
-                className="w-full sm:w-auto bg-[#1ECE25] text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-[#1bb822] transition-all hover:shadow-[0_8px_30px_rgb(30,206,37,0.3)] transform hover:-translate-y-1 flex items-center justify-center gap-2 group"
+                className="w-full sm:w-auto bg-[#1ECE25] text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-[#1bb822] transition-all hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transform hover:-translate-y-1 flex items-center justify-center gap-2 group"
               >
                 Find an Artisan <span className="text-xl group-hover:translate-x-1 transition-transform">→</span>
               </Link>
@@ -196,14 +221,14 @@ export default function LandingPage() {
       {/* Footer CTA */}
       <section className="bg-brand-navy py-32 text-center px-6 relative overflow-hidden">
         <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent" />
-        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-[#1ECE25]/20 blur-[120px]" />
+        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-blue-500/20 blur-[120px]" />
         
         <div className="relative z-10 max-w-3xl mx-auto">
           <h2 className="text-4xl md:text-6xl font-black text-white tracking-tight leading-[1.1] mb-6">Ready to get that fixed?</h2>
           <p className="text-xl text-blue-200 mb-12 font-medium">Join thousands of satisfied customers who found their trusted artisans on SharpWork.</p>
           <Link
             href="/search"
-            className="inline-block bg-[#1ECE25] text-white px-10 py-5 rounded-full font-bold text-xl hover:bg-[#1bb822] transition-all shadow-[0_8px_30px_rgb(30,206,37,0.3)] hover:shadow-[0_15px_40px_rgb(30,206,37,0.4)] transform hover:-translate-y-1"
+            className="inline-block bg-[#1ECE25] text-white px-10 py-5 rounded-full font-bold text-xl hover:bg-[#1bb822] transition-all shadow-[0_8px_30px_rgba(0,0,0,0.15)] hover:shadow-[0_15px_40px_rgba(0,0,0,0.2)] transform hover:-translate-y-1"
           >
             Start Browsing Now
           </Link>

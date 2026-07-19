@@ -36,6 +36,21 @@ function paymentBadgeClass(status: string, escrowReleased?: boolean) {
   return 'bg-gray-100 text-gray-600';
 }
 
+function stateBadgeClass(state: string) {
+  switch (state) {
+    case 'PENDING': return 'bg-gray-100 text-gray-600';
+    case 'ACCEPTED': return 'bg-blue-50 text-blue-600';
+    case 'IN_PROGRESS': return 'bg-amber-50 text-amber-600';
+    case 'EN_ROUTE': return 'bg-purple-50 text-purple-600';
+    case 'ARRIVED': return 'bg-indigo-50 text-indigo-600';
+    case 'COMPLETED': return 'bg-emerald-50 text-emerald-600';
+    case 'REVIEWED': return 'bg-teal-50 text-teal-600';
+    case 'DISPUTED': return 'bg-red-50 text-red-600';
+    case 'CANCELLED': return 'bg-rose-50 text-rose-600';
+    default: return 'bg-gray-50 text-gray-600';
+  }
+}
+
 function artisanName(booking: BookingRecord) {
   const p = booking.artisan?.artisanProfile;
   return p ? `${p.firstName} ${p.lastName}` : 'Artisan';
@@ -266,20 +281,25 @@ export function CustomerBookingsPanel() {
 
             <div className="space-y-4 mb-12">
               {filteredBookings.map((booking) => (
-          <div key={booking.id} className="bg-white rounded-3xl border border-gray-100 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-shadow duration-200">
+          <div key={booking.id} className="bg-white rounded-3xl border border-gray-100 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)] hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-0.5 group">
             <div>
-              <h3 className="font-bold text-lg text-brand-navy">{booking.description.slice(0, 60)}...</h3>
-              <p className="text-gray-500 font-medium mt-1">{artisanName(booking)} • <span className="text-brand-green font-bold">₦{booking.price.toLocaleString()}</span></p>
+              <h3 className="font-bold text-lg text-brand-navy group-hover:text-brand-green transition-colors">{booking.description.slice(0, 60)}{booking.description.length > 60 ? '...' : ''}</h3>
+              <p className="text-gray-500 font-medium mt-1">{artisanName(booking)} • <span className="text-[#1ECE25] font-bold">₦{booking.price.toLocaleString()}</span></p>
               {booking.categorySlugs && booking.categorySlugs.length > 0 && (
-                <p className="text-xs text-brand-navy/60 font-medium uppercase tracking-wider mt-2">{booking.categorySlugs.join(' · ')}</p>
+                <p className="text-xs text-brand-navy/60 font-bold uppercase tracking-wider mt-2 bg-gray-50 inline-block px-2 py-1 rounded-md">{booking.categorySlugs.join(' · ')}</p>
               )}
-              <p className="text-sm text-gray-400 mt-1">{booking.serviceAddress || 'No address provided'}</p>
+              <p className="text-sm text-gray-400 mt-2 flex items-center gap-1">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.243-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                {booking.serviceAddress || 'No address provided'}
+              </p>
             </div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${paymentBadgeClass(booking.paymentStatus, booking.escrowReleased)}`}>
+            <div className="flex items-center gap-3 flex-wrap md:justify-end">
+              <span className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase ${paymentBadgeClass(booking.paymentStatus, booking.escrowReleased)}`}>
                 {paymentLabel(booking.paymentStatus, booking.escrowReleased, booking.escrowReleasedAmount)}
               </span>
-              <span className="bg-blue-50 text-blue-600 px-4 py-1.5 rounded-full text-sm font-bold uppercase">{booking.state}</span>
+              <span className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase ${stateBadgeClass(booking.state)}`}>
+                {booking.state.replace('_', ' ')}
+              </span>
               {(booking.chatOpen ?? isChatOpen(booking.state)) && (
                 <Link href={`/job/${booking.id}/tracking`} className="text-brand-green font-bold text-sm">
                   Track &amp; Chat
@@ -434,16 +454,16 @@ export function ArtisanBookingsPanel() {
         ) : (
           <div className="space-y-4">
             {pending.map((booking) => (
-              <div key={booking.id} className="bg-white p-6 rounded-2xl border flex justify-between items-center gap-4">
+              <div key={booking.id} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)] hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-0.5 group flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
-                  <p className="font-bold text-brand-navy">{customerName(booking)}</p>
-                  <p className="text-gray-500 text-sm">{booking.description.slice(0, 80)}</p>
+                  <p className="font-bold text-lg text-brand-navy">{customerName(booking)}</p>
+                  <p className="text-gray-500 font-medium mt-1">{booking.description.slice(0, 80)}{booking.description.length > 80 ? '...' : ''}</p>
                   {booking.categorySlugs && booking.categorySlugs.length > 0 && (
-                    <p className="text-xs text-gray-400 mt-1">{booking.categorySlugs.join(' · ')}</p>
+                    <p className="text-xs text-brand-navy/60 font-bold uppercase tracking-wider mt-2 bg-gray-50 inline-block px-2 py-1 rounded-md">{booking.categorySlugs.join(' · ')}</p>
                   )}
-                  <p className="text-brand-green font-bold">₦{booking.price.toLocaleString()}</p>
+                  <p className="text-[#1ECE25] font-black mt-2">₦{booking.price.toLocaleString()}</p>
                 </div>
-                <button onClick={() => changeState(booking.id, 'ACCEPTED')} className="bg-brand-green text-white px-5 py-2 rounded-xl font-bold">
+                <button onClick={() => changeState(booking.id, 'ACCEPTED')} className="bg-[#1ECE25] text-white px-6 py-3 rounded-2xl font-bold hover:bg-[#1bb822] shadow-sm hover:shadow-[0_8px_20px_rgba(30,206,37,0.3)] transition-all">
                   Accept Job
                 </button>
               </div>
@@ -470,10 +490,14 @@ export function ArtisanBookingsPanel() {
         ) : (
           <div className="space-y-4">
             {active.map((booking) => (
-              <div key={booking.id} className="bg-white p-6 rounded-2xl border flex justify-between items-center gap-4">
+              <div key={booking.id} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)] hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-0.5 flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
-                  <p className="font-bold text-brand-navy">{booking.description.slice(0, 60)}</p>
-                  <p className="text-sm text-gray-500 uppercase">{booking.state}</p>
+                  <p className="font-bold text-lg text-brand-navy">{booking.description.slice(0, 60)}{booking.description.length > 60 ? '...' : ''}</p>
+                  <div className="mt-2 flex gap-2">
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${stateBadgeClass(booking.state)}`}>
+                      {booking.state.replace('_', ' ')}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   {(booking.chatOpen ?? isChatOpen(booking.state)) && (

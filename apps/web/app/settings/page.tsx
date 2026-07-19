@@ -84,7 +84,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50/50 md:pl-64">
       <DashboardNav variant={user?.role === 'ARTISAN' ? 'artisan' : 'customer'} />
       <div className="max-w-4xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Account Settings</h1>
@@ -124,24 +124,24 @@ export default function SettingsPage() {
               )}
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">First Name</label>
-                  <input type="text" value={profileForm.firstName} onChange={e => setProfileForm({...profileForm, firstName: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#0D2B5E] focus:ring-[#0D2B5E] sm:text-sm border p-2 bg-white" />
+                  <label className="block text-sm font-bold text-gray-700 mb-1.5">First Name</label>
+                  <input type="text" value={profileForm.firstName} onChange={e => setProfileForm({...profileForm, firstName: e.target.value})} className="block w-full rounded-xl border-gray-200 shadow-sm focus:border-[#1ECE25] focus:ring focus:ring-[#1ECE25]/20 text-sm border p-3 bg-gray-50 hover:bg-white transition-colors" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Last Name</label>
-                  <input type="text" value={profileForm.lastName} onChange={e => setProfileForm({...profileForm, lastName: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#0D2B5E] focus:ring-[#0D2B5E] sm:text-sm border p-2 bg-white" />
+                  <label className="block text-sm font-bold text-gray-700 mb-1.5">Last Name</label>
+                  <input type="text" value={profileForm.lastName} onChange={e => setProfileForm({...profileForm, lastName: e.target.value})} className="block w-full rounded-xl border-gray-200 shadow-sm focus:border-[#1ECE25] focus:ring focus:ring-[#1ECE25]/20 text-sm border p-3 bg-gray-50 hover:bg-white transition-colors" />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700">Email Address</label>
-                  <input type="email" value={profileForm.email} onChange={e => setProfileForm({...profileForm, email: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#0D2B5E] focus:ring-[#0D2B5E] sm:text-sm border p-2 bg-white" />
+                  <label className="block text-sm font-bold text-gray-700 mb-1.5">Email Address</label>
+                  <input type="email" value={profileForm.email} onChange={e => setProfileForm({...profileForm, email: e.target.value})} className="block w-full rounded-xl border-gray-200 shadow-sm focus:border-[#1ECE25] focus:ring focus:ring-[#1ECE25]/20 text-sm border p-3 bg-gray-50 hover:bg-white transition-colors" />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700">Phone Number</label>
-                  <input type="tel" value={profileForm.phoneNumber} onChange={e => setProfileForm({...profileForm, phoneNumber: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#0D2B5E] focus:ring-[#0D2B5E] sm:text-sm border p-2 bg-white" />
+                  <label className="block text-sm font-bold text-gray-700 mb-1.5">Phone Number</label>
+                  <input type="tel" value={profileForm.phoneNumber} onChange={e => setProfileForm({...profileForm, phoneNumber: e.target.value})} className="block w-full rounded-xl border-gray-200 shadow-sm focus:border-[#1ECE25] focus:ring focus:ring-[#1ECE25]/20 text-sm border p-3 bg-gray-50 hover:bg-white transition-colors" />
                 </div>
               </div>
-              <div className="flex justify-end">
-                <button onClick={handleProfileSave} disabled={profileSaving} className="bg-[#0D2B5E] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#0D2B5E]/90 disabled:opacity-50 transition-opacity">
+              <div className="flex justify-end pt-4">
+                <button onClick={handleProfileSave} disabled={profileSaving} className="bg-[#1ECE25] text-white px-8 py-3 rounded-xl text-sm font-bold hover:bg-[#1bb822] disabled:opacity-50 shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:-translate-y-0.5 transition-all">
                   {profileSaving ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
@@ -157,19 +157,19 @@ export default function SettingsPage() {
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-gray-700">Current Password</label>
-                <input type="password" value={passwords.current} onChange={e => setPasswords({...passwords, current: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#0D2B5E] focus:ring-[#0D2B5E] sm:text-sm border p-2" />
+                <label className="block text-sm font-bold text-gray-700 mb-1.5">Current Password</label>
+                <input type="password" value={passwords.current} onChange={e => setPasswords({...passwords, current: e.target.value})} className="block w-full rounded-xl border-gray-200 shadow-sm focus:border-[#1ECE25] focus:ring focus:ring-[#1ECE25]/20 text-sm border p-3 bg-gray-50 hover:bg-white transition-colors" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">New Password</label>
-                <input type="password" value={passwords.new} onChange={e => setPasswords({...passwords, new: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#0D2B5E] focus:ring-[#0D2B5E] sm:text-sm border p-2" />
+                <label className="block text-sm font-bold text-gray-700 mb-1.5">New Password</label>
+                <input type="password" value={passwords.new} onChange={e => setPasswords({...passwords, new: e.target.value})} className="block w-full rounded-xl border-gray-200 shadow-sm focus:border-[#1ECE25] focus:ring focus:ring-[#1ECE25]/20 text-sm border p-3 bg-gray-50 hover:bg-white transition-colors" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Confirm New Password</label>
-                <input type="password" value={passwords.confirm} onChange={e => setPasswords({...passwords, confirm: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#0D2B5E] focus:ring-[#0D2B5E] sm:text-sm border p-2" />
+                <label className="block text-sm font-bold text-gray-700 mb-1.5">Confirm New Password</label>
+                <input type="password" value={passwords.confirm} onChange={e => setPasswords({...passwords, confirm: e.target.value})} className="block w-full rounded-xl border-gray-200 shadow-sm focus:border-[#1ECE25] focus:ring focus:ring-[#1ECE25]/20 text-sm border p-3 bg-gray-50 hover:bg-white transition-colors" />
               </div>
-              <div className="flex justify-end">
-                <button onClick={handlePasswordSave} disabled={passwordSaving} className="bg-[#0D2B5E] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#0D2B5E]/90 disabled:opacity-50 transition-opacity">
+              <div className="flex justify-end pt-4">
+                <button onClick={handlePasswordSave} disabled={passwordSaving} className="bg-[#1ECE25] text-white px-8 py-3 rounded-xl text-sm font-bold hover:bg-[#1bb822] disabled:opacity-50 shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:-translate-y-0.5 transition-all">
                   {passwordSaving ? 'Updating...' : 'Update Password'}
                 </button>
               </div>
@@ -188,8 +188,8 @@ export default function SettingsPage() {
                   Once you delete your account, your profile will be hidden and you will lose access to SharpWork services. This action cannot be easily reversed.
                 </p>
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-red-800 mb-1">Type "DELETE" to confirm</label>
-                  <input type="text" value={deleteConfirm} onChange={e => setDeleteConfirm(e.target.value)} className="block w-full max-w-xs rounded-md border-red-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm border p-2" placeholder="DELETE" />
+                  <label className="block text-sm font-bold text-red-800 mb-1.5">Type "DELETE" to confirm</label>
+                  <input type="text" value={deleteConfirm} onChange={e => setDeleteConfirm(e.target.value)} className="block w-full max-w-xs rounded-xl border-red-300 shadow-sm focus:border-red-500 focus:ring focus:ring-red-500/20 text-sm border p-3 bg-white" placeholder="DELETE" />
                 </div>
                 {deleteError && (
                   <p className="mt-3 text-sm text-red-700 font-medium mb-4">{deleteError}</p>

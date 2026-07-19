@@ -114,7 +114,7 @@ function ServicesContent() {
       <section className="relative bg-brand-navy text-white pt-24 pb-32 px-6 overflow-hidden">
         {/* Animated blobs */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-[#1ECE25]/15 blur-[100px] animate-pulse" style={{ animationDuration: '6s' }} />
+          <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-500/20 blur-[100px] animate-pulse" style={{ animationDuration: '6s' }} />
           <div className="absolute bottom-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-white/5 blur-[100px] animate-pulse" style={{ animationDuration: '8s', animationDelay: '2s' }} />
           {/* Subtle dot grid */}
           <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
@@ -130,7 +130,7 @@ function ServicesContent() {
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight mb-6 animate-fade-in-up stagger-1">
             What do you need
             <br />
-            <span className="text-[#1ECE25]">help with?</span>
+            <span className="text-blue-300">help with?</span>
           </h1>
           <p className="text-lg md:text-xl text-white/60 max-w-2xl mx-auto leading-relaxed font-medium animate-fade-in-up stagger-2">
             Browse categories and find verified, background-checked professionals ready to work in your area.
@@ -176,7 +176,7 @@ function ServicesContent() {
               </div>
               <h3 className="text-xl font-black text-brand-navy mb-2 tracking-tight">Couldn&apos;t load services</h3>
               <p className="text-gray-500 mb-6 font-medium">Check your connection and try again.</p>
-              <button onClick={() => window.location.reload()} className="px-6 py-3 bg-[#1ECE25] text-white rounded-2xl font-bold text-sm hover:bg-[#1bb822] transition-all shadow-[0_4px_12px_rgba(30,206,37,0.3)]">
+              <button onClick={() => window.location.reload()} className="px-6 py-3 bg-[#1ECE25] text-white rounded-2xl font-bold text-sm hover:bg-[#1bb822] transition-all shadow-[0_4px_12px_rgba(0,0,0,0.1)]">
                 Retry
               </button>
             </div>
@@ -219,7 +219,7 @@ function ServicesContent() {
         {!isLoading && !error && categories.length > 0 && (
           <div className="mt-16 bg-gradient-to-br from-brand-navy to-brand-navy/90 rounded-[2rem] p-12 text-center relative overflow-hidden animate-fade-in-up">
             <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '25px 25px' }} />
-            <div className="absolute top-0 right-0 w-[40%] h-[100%] bg-[#1ECE25]/10 blur-[80px]" />
+            <div className="absolute top-0 right-0 w-[40%] h-[100%] bg-blue-500/20 blur-[80px]" />
             <div className="relative z-10">
               <h3 className="text-3xl md:text-4xl font-black text-white tracking-tight mb-4">
                 Can&apos;t find what you&apos;re looking for?
@@ -229,7 +229,7 @@ function ServicesContent() {
               </p>
               <Link
                 href="/search"
-                className="inline-flex items-center gap-2 bg-[#1ECE25] text-white px-8 py-4 rounded-2xl font-bold text-sm hover:bg-[#1bb822] transition-all shadow-[0_4px_20px_rgba(30,206,37,0.4)] hover:-translate-y-0.5"
+                className="inline-flex items-center gap-2 bg-[#1ECE25] text-white px-8 py-4 rounded-2xl font-bold text-sm hover:bg-[#1bb822] transition-all shadow-[0_4px_20px_rgba(0,0,0,0.15)] hover:-translate-y-0.5"
               >
                 Search All Artisans <span className="text-base">→</span>
               </Link>
