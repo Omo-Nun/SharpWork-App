@@ -10,7 +10,7 @@ if (!app || !['web', 'admin'].includes(app)) {
 }
 
 const port = process.env.PORT || '3000';
-const hostname = process.env.HOSTNAME || '0.0.0.0';
+const hostname = '0.0.0.0';
 
 const appDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'apps', app);
 const standaloneDir = path.join(appDir, '.next', 'standalone', 'apps', app);
