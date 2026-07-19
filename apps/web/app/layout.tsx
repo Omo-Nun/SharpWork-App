@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { ConditionalAuth } from "../components/ConditionalAuth";
 import { Footer } from "../components/Footer";
+import { GlobalBackButton } from "../components/GlobalBackButton";
 import { QueryProvider } from "../providers/QueryProvider";
 import "./globals.css";
 
@@ -53,6 +54,7 @@ export default function RootLayout({
               {children}
             </main>
             <Footer />
+            <GlobalBackButton />
           </ConditionalAuth>
         </QueryProvider>
       </body>
