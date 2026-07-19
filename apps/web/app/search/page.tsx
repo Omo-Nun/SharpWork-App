@@ -191,16 +191,15 @@ function SearchContent() {
   });
 
   const toggleCategory = useCallback((slug: string) => {
-    setSelectedCategories(prev => {
-      const next = prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug];
-      if (next.length) {
-        router.replace(`/search?categories=${next.join(',')}`);
-      } else {
-        router.replace('/search');
-      }
-      return next;
-    });
-  }, [router]);
+    const prev = selectedCategories;
+    const next = prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug];
+    setSelectedCategories(next);
+    if (next.length) {
+      router.replace(`/search?categories=${next.join(',')}`);
+    } else {
+      router.replace('/search');
+    }
+  }, [router, selectedCategories]);
 
   const selectedCategoryObjects = useMemo(
     () => categories.filter((c) => selectedCategories.includes(c.slug)),
