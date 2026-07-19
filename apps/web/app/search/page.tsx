@@ -5,13 +5,8 @@ import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-<<<<<<< HEAD
-import { GoogleMap } from '../../components/GoogleMap';
-import { fetchServiceCategories, searchArtisans } from '../../lib/marketplace';
-=======
 import { OpenStreetMap } from '../../components/OpenStreetMap';
 import { fetchServiceCategories, searchArtisans, type SearchArtisan } from '../../lib/marketplace';
->>>>>>> 692263da91a95f3adee72c4f0ae332c9e935c06d
 
 const DEFAULT_LAT = 6.5244;
 const DEFAULT_LNG = 3.3792;
@@ -354,73 +349,6 @@ function SearchContent() {
             <div className="w-20 h-20 bg-brand-green/10 rounded-3xl flex items-center justify-center mb-6">
               <svg className="w-10 h-10 text-brand-green" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
             </div>
-<<<<<<< HEAD
-
-            <div className="mb-8">
-              <GoogleMap lat={coords.lat} lng={coords.lng} className="h-56 w-full rounded-2xl shadow-sm" label="Your location" />
-            </div>
-
-            <div className="bg-white p-4 rounded-2xl border shadow-sm mb-8 grid grid-cols-1 md:grid-cols-4 gap-3">
-              <input
-                type="text"
-                placeholder="Search by artisan name..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                className="px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-green md:col-span-2"
-              />
-              <select
-                value={radiusKm}
-                onChange={(e) => setRadiusKm(Number(e.target.value))}
-                className="px-4 py-3 rounded-xl border border-gray-200 bg-white"
-              >
-                {[5, 10, 20, 50].map((r) => (
-                  <option key={r} value={r}>{r} km radius</option>
-                ))}
-              </select>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as 'distance' | 'rating' | 'jobs_completed')}
-                className="px-4 py-3 rounded-xl border border-gray-200 bg-white"
-              >
-                <option value="distance">Nearest</option>
-                <option value="rating">Highest Rated</option>
-                <option value="jobs_completed">Most Jobs Done</option>
-              </select>
-            </div>
-
-            <div className="flex flex-wrap gap-2 mb-6">
-              {categories.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => toggleCategory(c.slug)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium border ${
-                    selectedCategories.includes(c.slug)
-                      ? 'bg-brand-navy text-white border-brand-navy'
-                      : 'bg-white text-gray-600 border-gray-200'
-                  }`}
-                >
-                  {c.name}
-                </button>
-              ))}
-            </div>
-
-            {isLoading && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div key={i} className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm animate-pulse h-48 flex flex-col justify-between">
-                    <div className="flex justify-between items-start">
-                      <div className="w-1/2 h-6 bg-gray-200 rounded mb-2" />
-                      <div className="w-16 h-5 bg-gray-200 rounded-full" />
-                    </div>
-                    <div className="w-1/3 h-4 bg-gray-200 rounded mb-4" />
-                    <div className="flex gap-2">
-                      <div className="flex-1 h-10 bg-gray-200 rounded-full" />
-                      <div className="flex-1 h-10 bg-gray-200 rounded-full" />
-                    </div>
-                  </div>
-                ))}
-=======
             <h2 className="text-2xl font-bold text-brand-navy mb-3">What service are you looking for?</h2>
             <p className="text-gray-500 mb-8 max-w-md">Select a service category to discover verified, professional artisans near you.</p>
             <Link href="/services" className="bg-brand-green text-white px-8 py-3.5 rounded-xl font-bold text-lg hover:bg-emerald-600 transition-all shadow-lg hover:shadow-brand-green/30 hover:-translate-y-0.5">
@@ -433,7 +361,6 @@ function SearchContent() {
             <aside className="hidden lg:block w-72 flex-shrink-0">
               <div className="sticky top-24 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
                 <FiltersPanel />
->>>>>>> 692263da91a95f3adee72c4f0ae332c9e935c06d
               </div>
             </aside>
 
