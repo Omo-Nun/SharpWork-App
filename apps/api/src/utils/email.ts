@@ -37,12 +37,8 @@ export async function sendVerificationEmail(
   `;
   const text = `Hi ${firstName},\n\nVerify your SharpWork account: ${verifyUrl}\n\nThis link expires in 24 hours.`;
 
-<<<<<<< HEAD
   const isConfigured = configureSendGrid();
   if (!isConfigured) {
-=======
-  if (!configureSendGrid()) {
->>>>>>> 692263da91a95f3adee72c4f0ae332c9e935c06d
     console.log(`[Email Dev] Verification email for ${to}`);
     console.log(`[Email Dev] Verify URL: ${verifyUrl}`);
     return;

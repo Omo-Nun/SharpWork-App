@@ -12,7 +12,7 @@ interface GoogleMapProps {
 
 declare global {
   interface Window {
-    google: typeof google;
+    google: any;
     __gmapCallback?: () => void;
   }
 }
