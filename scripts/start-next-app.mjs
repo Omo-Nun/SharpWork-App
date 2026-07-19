@@ -9,7 +9,7 @@ if (!app || !['web', 'admin'].includes(app)) {
   process.exit(1);
 }
 
-const port = process.env.PORT || (app === 'web' ? '3002' : '3001');
+const port = process.env.PORT || '3000';
 const hostname = process.env.HOSTNAME || '0.0.0.0';
 
 const appDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'apps', app);
