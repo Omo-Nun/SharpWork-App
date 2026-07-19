@@ -159,6 +159,7 @@ export async function fetchPublicArtisanProfile(userId: string) {
     skills: string[];
     categories: ServiceCategory[];
     portfolioUrls: string[];
+    isOnline: boolean;
     isVerified: boolean;
     averageRating: number;
     reviewCount: number;
